@@ -29,7 +29,7 @@ It combines official documents, structured metadata, and practical guides for dr
 
 ---
 
-## Contents
+## Github Contents
 
 | Folder | Description |
 |---------|--------------|
@@ -52,9 +52,9 @@ It combines official documents, structured metadata, and practical guides for dr
 
 ## Roadmap
 
-- [ ] Add international public sector strategies (2025 refresh) to [Strategy List](resources/strategies.md)
-- [ ] Extract recurring insights into [Meta Lessons & Insights](resources/meta_lessons.md)
-- [ ] Update [Playbook](playbooks/writing_a_data_strategy.md)  
+-  [ ] Add international public sector strategies (2025 refresh) to [Strategy List](resources/strategies.md)
+-  [ ] Extract recurring insights into [Meta Lessons & Insights](resources/meta_lessons.md)
+-  [ ] Update [Playbook](playbooks/writing_a_data_strategy.md)  
 
 
 ## Contributing
