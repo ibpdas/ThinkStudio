@@ -7,7 +7,7 @@ import streamlit as st
 import plotly.express as px
 from io import StringIO
 
-st.set_page_config(page_title="UK Public-Sector Data Strategies", layout="wide")
+st.set_page_config(page_title="UK Public Sector Data Strategies Explorer", layout="wide")
 
 @st.cache_data
 def load_data(path: str) -> pd.DataFrame:
