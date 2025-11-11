@@ -1,5 +1,5 @@
 pgsql
-title	organisation	year	scope	link	summary
+title,organisation,	year,	scope,link,summary
 UK National Data Strategy	UK Government (DCMS/DSIT)	2020	national	https://www.gov.uk/guidance/national-data-strategy	Whole-of-UK framework: value, trust, capability, and public service outcomes.
 GSS Subnational Data Strategy	Government Statistical Service	2021	cross-government	https://analysisfunction.civilservice.gov.uk/policy-store/gss-subnational-data-strategy/	Improves production and use of sub-national statistics and insights.
 Data Saves Lives: reshaping health and social care with data	DHSC / NHS England	2022	national (health)	https://www.gov.uk/government/publications/data-saves-lives-reshaping-health-and-social-care-with-data/data-saves-lives-reshaping-health-and-social-care-with-data	National health data strategy with trust, transparency, and better care outcomes.
