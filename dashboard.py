@@ -20,7 +20,9 @@ def load_data(path: str) -> pd.DataFrame:
     df["scope"] = df["scope"].str.strip().str.lower()
     return df.dropna(subset=["title", "organisation", "year", "scope"])
 
-df = load_data("data/strategies.csv")
+RAW_URL = "https://raw.githubusercontent.com/ibpdas/Public-Sector-Data-Strategies/main/data/strategies.csv"
+df = load_data(RAW_URL)
+
 
 # ---- Sidebar filters
 st.sidebar.header("Filters")
