@@ -50,10 +50,9 @@ It combines official documents, structured metadata, and practical guides for dr
 
 ## Roadmap
 
-- [ ] Add 20–30 departmental strategies (2025 refresh)  
-- [ ] Extract recurring insights into `resources/meta_lessons.md`  
-- [ ] Build a lightweight visual dashboard (CSV → charts)  
-- [ ] Enable GitHub Pages summary view
+- [ ] Add international public sector strategies (2025 refresh)  
+- [ ] Extract recurring insights into `resources/meta_lessons.md`
+- [ ] Update 'playbook'
 
 
 ## Contributing
