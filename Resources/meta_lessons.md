@@ -81,7 +81,7 @@ Seen in Defra, NHS, ONS, and MHRA.
 
 ---
 
-## 9️9 The Next Frontier: AI-Ready Data Ecosystems
+## 9️ The Next Frontier: AI-Ready Data Ecosystems
 2024–2025 updates (MHRA, UKHSA, DHSC) frame data strategies as **precursors to safe AI adoption**.  
 **Lesson:** Future data strategies must explicitly show how data supports responsible AI.
 
@@ -94,7 +94,7 @@ Seen in Defra, NHS, ONS, and MHRA.
 | Governance | Named roles, federated boards | Ambiguity on accountability |
 | Skills | Literacy for all levels | “Training once” approaches |
 | Ethics | Linked to delivery | Separate annexes with no action |
-| Measurement | Value metrics in dashboards | Over-reliance on maturity scoring alone |
+| Measurement | Value metrics in dashboards | Over reliance on maturity scoring alone |
 
 ---
 
