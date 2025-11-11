@@ -1,5 +1,11 @@
 # Public Sector Data Strategies
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Public Good](https://img.shields.io/badge/Public%20Good-Open%20Data%20Resource-brightgreen)
+![Responsible AI](https://img.shields.io/badge/Responsible-AI-blueviolet)
+![Contributions Welcome](https://img.shields.io/badge/Contributions-Welcome-success)
+![Verified Sources](https://img.shields.io/badge/Sources-Verified%2020%2B-informational)
+
 **Making data strategy reusable.**  
 
 An open, insight driven library of **UK public sector data strategies, playbooks, and lessons learned** — helping data leaders compare, learn, and write better strategies.
