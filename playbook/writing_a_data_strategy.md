@@ -1,4 +1,4 @@
-# How to Write a Public-Sector Data Strategy (UK Edition)
+# How to Write a Public-Sector Data Strategy
 
 ## Purpose
 A data strategy helps a public-sector organisation:
@@ -16,7 +16,7 @@ A data strategy helps a public-sector organisation:
 - Connection to government priorities (e.g., economic growth, net zero)
 
 ### 2. Context & Drivers
-- Policy background (National Data Strategy, CDDO Roadmap, etc.)  
+- Policy background (*A blurptint for modern digital government* etc.)  
 - Key challenges and opportunities
 
 ### 3. Principles
@@ -51,7 +51,7 @@ A data strategy helps a public-sector organisation:
 
 ---
 
-## ✅ Minimum Checklist
+## Minimum Checklist
 
 - [ ] Clear mission statement  
 - [ ] Linked to organisational/business outcomes  
@@ -64,7 +64,7 @@ A data strategy helps a public-sector organisation:
 
 ---
 
-## ⚠️ Common Pitfalls
+## Common Pitfalls
 
 | Pitfall | Fix |
 |----------|-----|
@@ -76,7 +76,7 @@ A data strategy helps a public-sector organisation:
 
 ---
 
-## 🗺️ One-Page Template
+## One-Page Template
 
 **Title:** [Department / Agency] Data Strategy (20XX–20XX)  
 **Purpose:** Why data matters to your mission  
@@ -89,5 +89,5 @@ A data strategy helps a public-sector organisation:
 
 ---
 
-> ✍️ *This playbook synthesises patterns across 20+ UK public-sector data strategies curated in this repository.*  
+> *This playbook synthesises patterns across 20+ UK public-sector data strategies curated in this repository.*  
 > *Use it as a blueprint for drafting or refreshing your own strategy.*
