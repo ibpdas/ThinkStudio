@@ -33,20 +33,20 @@ It combines official documents, structured metadata, and practical guides for dr
 
 | Folder | Description |
 |---------|--------------|
-| **resources/** | Curated list of UK and devolved data strategies |
-| **data/** | Machine readable dataset (`strategies.csv`) with title, org, year, link, and summary |
-| **playbook/** | Practical guides, e.g. `writing_a_data_strategy.md` |
-| **scripts/** | Utility tools like `validate.py` for data checks |
-| **.github/** | Issue and PR templates for community contributions |
+| **Resources** | Curated list of UK and devolved data strategies |
+| **Data** | Machine readable dataset (`strategies.csv`) with title, org, year, link, and summary |
+| **Playbook** | Practical guides, e.g. `writing_a_data_strategy.md` |
+| **Scripts** | Utility tools like `validate.py` for data checks |
+| **.Github** | Issue and PR templates for community contributions |
 
 ---
 
 ## How To Use This Repo
 
-1. **Explore** `resources/strategies.md` to view national, departmental, and devolved strategies.  
+1. **Explore** `resources/strategies.csv` to view national, departmental, and devolved strategies.  
 2. **Analyse** or filter `data/strategies.csv` for comparison across departments.  
 3. **Draft** or refresh your own strategy using the playbook in `playbook/writing_a_data_strategy.md`
-4. **Contribute** new strategies or updates via Issues → “💡 Strategy Submission”.  
+4. **Contribute** new strategies or updates via Issues → [![Contribute a Strategy](https://img.shields.io/badge/Contribute-Submit%20New%20Strategy-blue)](https://github.com/ibpdas/Public-Sector-Data-Strategies/issues/new?assignees=&labels=enhancement%2Cresource&template=resource_submission.md&title=%F0%9F%92%A1+Strategy+Submission) 
 5. **Discuss** lessons or implementation insights in GitHub Discussions.
 
 ---
