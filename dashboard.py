@@ -133,7 +133,7 @@ def render_explainer_block():
 - **Profile** records your *current balance* across those tensions.
 
 Ask yourself:
-1. What type of data strategy are we trying to become? *(Preset)*  
+1. What type of data strategy are we trying to deliver? *(Preset)*  
 2. What tensions define our journey? *(Lenses)*  
 3. Where are we now, and how far are we from our target? *(Gap)*  
 4. Which tensions require conscious management? *(Priority for action)*
