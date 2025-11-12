@@ -1,10 +1,10 @@
-
 # ---------------------------
-# Public Sector Data Strategy Explorer — Minimal (No Archetype, No Explorer)
+# Public Sector Data Strategy Explorer — Minimal + Strategy Types (Ten Lenses)
 # ---------------------------
-import os, glob, time
+import os, glob, time, json
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 # Optional fuzzy search
@@ -64,110 +64,185 @@ except Exception as e:
     st.error(f"⚠️ {e}")
     st.stop()
 
-# --- Sidebar filters (metadata only)
-with st.sidebar:
-    st.subheader("Filters")
-    years = sorted(y for y in df["year"].dropna().unique())
-    if years:
-        min_y, max_y = int(min(years)), int(max(years))
-        year_range = st.slider("Year range", min_value=min_y, max_value=max_y, value=(min_y, max_y), step=1)
+# ---- Tabs: Explore / Strategy Types / About
+tab_explore, tab_types, tab_about = st.tabs(["🔎 Explore", "👁️ Strategy Types", "ℹ️ About"])
+
+# =====================
+# 🔎 Explore (metadata-only; no archetypes, no explorer table)
+# =====================
+with tab_explore:
+    # Sidebar filters (metadata only)
+    with st.sidebar:
+        st.subheader("Filters")
+        years = sorted(y for y in df["year"].dropna().unique())
+        if years:
+            min_y, max_y = int(min(years)), int(max(years))
+            year_range = st.slider("Year range", min_value=min_y, max_value=max_y, value=(min_y, max_y), step=1)
+        else:
+            year_range = None
+            st.info("No valid 'year' values — skipping year filter.")
+
+        org_types = sorted([v for v in df["org_type"].unique() if v != ""])
+        org_type_sel = st.multiselect("Organisation type", org_types, default=org_types)
+
+        countries = sorted([v for v in df["country"].unique() if v != ""])
+        country_sel = st.multiselect("Country", countries, default=countries)
+
+        scopes = sorted([v for v in df["scope"].unique() if v != ""])
+        scope_sel = st.multiselect("Scope", scopes, default=scopes)
+
+        q = st.text_input("Search title, organisation, summary", "", help="Fuzzy search on title/organisation/summary.")
+        st.markdown("---")
+        debug = st.checkbox("Show debug info")
+
+    def fuzzy_filter(df_in, query, limit=500):
+        if not query:
+            return df_in
+        q = query.strip()
+        hay = (df_in["title"] + " " + df_in["organisation"] + " " + df_in["summary"]).fillna("")
+        if HAS_RAPIDFUZZ:
+            matches = process.extract(q, hay.tolist(), scorer=fuzz.WRatio, limit=len(hay))
+            keep_idx = [i for _, score, i in matches if score >= 60]
+            if not keep_idx: return df_in.iloc[0:0]
+            return df_in.iloc[keep_idx].head(limit)
+        else:
+            mask = hay.str.contains(q, case=False, na=False)
+            return df_in[mask].head(limit)
+
+    # Apply filters
+    fdf = df.copy()
+    if year_range:
+        fdf = fdf[(fdf["year"].between(year_range[0], year_range[1], inclusive="both")) | (fdf["year"].isna())]
+    if org_type_sel:
+        fdf = fdf[fdf["org_type"].isin(org_type_sel)]
+    if country_sel:
+        fdf = fdf[fdf["country"].isin(country_sel)]
+    if scope_sel:
+        fdf = fdf[fdf["scope"].isin(scope_sel)]
+    fdf = fuzzy_filter(fdf, q)
+
+    # Debug info
+    st.info(f"Loaded **{len(df)}** rows from **{csv_path}**. After filters: **{len(fdf)}** rows.")
+    if debug:
+        with st.expander("🔎 Debug"):
+            st.write("Working directory:", os.getcwd())
+            st.write("Files:", os.listdir("."))
+            st.dataframe(fdf.head(), use_container_width=True)
+
+    if fdf.empty:
+        st.warning("No results match your filters/search. Try clearing a filter or the search box.")
+        st.stop()
+
+    # KPIs
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Strategies", len(fdf))
+    c2.metric("Org types", fdf["org_type"].nunique())
+    c3.metric("Countries", fdf["country"].nunique())
+    yr_min = int(fdf["year"].min()) if pd.notna(fdf["year"].min()) else "—"
+    yr_max = int(fdf["year"].max()) if pd.notna(fdf["year"].max()) else "—"
+    c4.metric("Year span", f"{yr_min}–{yr_max}")
+
+    # Visuals
+    st.subheader("Visuals")
+    row1_left, row1_right = st.columns(2)
+
+    if fdf["year"].notna().any():
+        by_year = fdf[fdf["year"].notna()].groupby("year").size().reset_index(name="count").sort_values("year")
+        row1_left.plotly_chart(px.bar(by_year, x="year", y="count", title="Strategies by year"), use_container_width=True)
     else:
-        year_range = None
-        st.info("No valid 'year' values — skipping year filter.")
+        row1_left.info("No numeric 'year' values to chart.")
 
-    org_types = sorted([v for v in df["org_type"].unique() if v != ""])
-    org_type_sel = st.multiselect("Organisation type", org_types, default=org_types)
+    by_org = fdf.groupby("organisation").size().reset_index(name="count").sort_values("count", ascending=False).head(15)
+    row1_right.plotly_chart(px.bar(by_org, x="organisation", y="count", title="Top organisations (by count)"), use_container_width=True)
 
-    countries = sorted([v for v in df["country"].unique() if v != ""])
-    country_sel = st.multiselect("Country", countries, default=countries)
-
-    scopes = sorted([v for v in df["scope"].unique() if v != ""])
-    scope_sel = st.multiselect("Scope", scopes, default=scopes)
-
-    q = st.text_input("Search title, organisation, summary", "", help="Fuzzy search on title/organisation/summary.")
     st.markdown("---")
-    debug = st.checkbox("Show debug info")
 
-def fuzzy_filter(df, query, limit=500):
-    if not query:
-        return df
-    q = query.strip()
-    hay = (df["title"] + " " + df["organisation"] + " " + df["summary"]).fillna("")
-    if HAS_RAPIDFUZZ:
-        matches = process.extract(q, hay.tolist(), scorer=fuzz.WRatio, limit=len(hay))
-        keep_idx = [i for _, score, i in matches if score >= 60]
-        if not keep_idx: return df.iloc[0:0]
-        return df.iloc[keep_idx].head(limit)
-    else:
-        mask = hay.str.contains(q, case=False, na=False)
-        return df[mask].head(limit)
+    # Download filtered CSV
+    st.download_button(
+        "Download filtered CSV",
+        data=fdf.to_csv(index=False).encode("utf-8"),
+        file_name="strategies_filtered.csv",
+        mime="text/csv"
+    )
 
-# --- Apply filters
-fdf = df.copy()
-if year_range:
-    fdf = fdf[(fdf["year"].between(year_range[0], year_range[1], inclusive="both")) | (fdf["year"].isna())]
-if org_type_sel:
-    fdf = fdf[fdf["org_type"].isin(org_type_sel)]
-if country_sel:
-    fdf = fdf[fdf["country"].isin(country_sel)]
-if scope_sel:
-    fdf = fdf[fdf["scope"].isin(scope_sel)]
-fdf = fuzzy_filter(fdf, q)
+    # Details
+    st.markdown("### Details")
+    for _, r in fdf.sort_values("year", ascending=False).iterrows():
+        ytxt = int(r["year"]) if pd.notna(r["year"]) else "—"
+        with st.expander(f"📄 {r['title']} — {r['organisation']} ({ytxt})"):
+            st.write(r["summary"] or "_No summary yet._")
+            meta = st.columns(4)
+            meta[0].write(f"**Org type:** {r['org_type']}")
+            meta[1].write(f"**Country:** {r['country']}")
+            meta[2].write(f"**Scope:** {r['scope']}")
+            meta[3].write(f"**Source:** {r['source']}")
+            if r["link"]:
+                st.link_button("Open document", r["link"], use_container_width=False)
 
-# --- Debug
-st.info(f"Loaded **{len(df)}** rows from **{csv_path}**. After filters: **{len(fdf)}** rows.")
-if debug:
-    with st.expander("🔎 Debug"):
-        st.write("Working directory:", os.getcwd())
-        st.write("Files:", os.listdir("."))
-        st.dataframe(fdf.head(), use_container_width=True)
+# =====================
+# 👁️ Strategy Types — Ten Lenses (interactive)
+# =====================
+with tab_types:
+    st.subheader("👁️ The Ten Lenses of Data Strategy")
+    st.markdown("Each data strategy balances these ten trade‑offs. Use the sliders to **self‑assess** where your organisation sits today.")
 
-if fdf.empty:
-    st.warning("No results match your filters/search. Try clearing a filter or the search box.")
-    st.stop()
+    axes = [
+        ("Abstraction Level", "Conceptual", "Logical / Physical"),
+        ("Adaptability", "Living", "Fixed"),
+        ("Ambition", "Essential", "Transformational"),
+        ("Coverage", "Horizontal", "Breadth / Use‑case‑based"),
+        ("Governance Structure", "Ecosystem / Federated", "Centralised"),
+        ("Orientation", "Technology‑focused", "Value‑focused"),
+        ("Motivation", "Compliance‑driven", "Innovation‑driven"),
+        ("Access Philosophy", "Data‑democratised", "Controlled access"),
+        ("Delivery Mode", "Incremental", "Big Bang"),
+        ("Decision Model", "Data‑informed", "Data‑driven")
+    ]
 
-# --- KPIs
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Strategies", len(fdf))
-c2.metric("Org types", fdf["org_type"].nunique())
-c3.metric("Countries", fdf["country"].nunique())
-yr_min = int(fdf["year"].min()) if pd.notna(fdf["year"].min()) else "—"
-yr_max = int(fdf["year"].max()) if pd.notna(fdf["year"].max()) else "—"
-c4.metric("Year span", f"{yr_min}–{yr_max}")
+    st.markdown("#### Self‑assessment sliders")
+    cols = st.columns(2)
+    scores = {}
+    for i, (dim, left, right) in enumerate(axes):
+        with cols[i % 2]:
+            scores[dim] = st.slider(f"{dim}", 0, 100, 50, format="%d%%", help=f"{left} ←→ {right}")
+            st.caption(f"{left} ←── {scores[dim]}% → {right}")
 
-# --- Visuals (no archetype charts)
-st.subheader("Visuals")
-row1_left, row1_right = st.columns(2)
+    # Radar chart (0‑100) — normalised to 0..1 for the polar radius
+    dims = [a[0] for a in axes]
+    r_vals = [scores[d] / 100.0 for d in dims]
+    fig_radar = go.Figure()
+    fig_radar.add_trace(go.Scatterpolar(r=r_vals + [r_vals[0]], theta=dims + [dims[0]], fill='toself', name="Your profile"))
+    fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0,1])), showlegend=False, title="Your strategic fingerprint")
+    st.plotly_chart(fig_radar, use_container_width=True)
 
-if fdf["year"].notna().any():
-    by_year = fdf[fdf["year"].notna()].groupby("year").size().reset_index(name="count").sort_values("year")
-    row1_left.plotly_chart(px.bar(by_year, x="year", y="count", title="Strategies by year"), use_container_width=True)
-else:
-    row1_left.info("No numeric 'year' values to chart.")
+    # Bars per dimension for quick reading
+    st.markdown("#### Per‑dimension balance")
+    per_dim = pd.DataFrame({
+        "Dimension": dims,
+        "Score (0=left, 100=right)": [scores[d] for d in dims]
+    })
+    st.plotly_chart(px.bar(per_dim, x="Dimension", y="Score (0=left, 100=right)", title="Balance by lens").update_xaxes(tickangle=30), use_container_width=True)
 
-by_org = fdf.groupby("organisation").size().reset_index(name="count").sort_values("count", ascending=False).head(15)
-row1_right.plotly_chart(px.bar(by_org, x="organisation", y="count", title="Top organisations (by count)"), use_container_width=True)
+    # Download self‑assessment JSON
+    st.download_button(
+        "Download my self‑assessment (JSON)",
+        data=json.dumps(scores, indent=2).encode("utf-8"),
+        file_name="strategy_ten_lenses_self_assessment.json",
+        mime="application/json"
+    )
 
-st.markdown("---")
+    st.info("Tip: Use this tab in workshops. Ask teams to slide independently, then compare profiles to surface strategic tensions and priorities.")
 
-# --- Download filtered CSV
-st.download_button(
-    "Download filtered CSV",
-    data=fdf.to_csv(index=False).encode("utf-8"),
-    file_name="strategies_filtered.csv",
-    mime="text/csv"
-)
+# =====================
+# ℹ️ About
+# =====================
+with tab_about:
+    st.subheader("About this Explorer")
+    st.markdown("""
+This build keeps the interface **simple** and **educational**:
+- 🔎 **Explore** — browse strategies, see volumes by year and organisation, open original sources
+- 👁️ **Strategy Types** — learn the ten design trade‑offs and self‑assess your current position
+- ℹ️ **About** — purpose, method, and how to contribute
 
-# --- Details (summary under details)
-st.markdown("### Details")
-for _, r in fdf.sort_values("year", ascending=False).iterrows():
-    ytxt = int(r["year"]) if pd.notna(r["year"]) else "—"
-    with st.expander(f"📄 {r['title']} — {r['organisation']} ({ytxt})"):
-        st.write(r["summary"] or "_No summary yet._")
-        meta = st.columns(4)
-        meta[0].write(f"**Org type:** {r['org_type']}")
-        meta[1].write(f"**Country:** {r['country']}")
-        meta[2].write(f"**Scope:** {r['scope']}")
-        meta[3].write(f"**Source:** {r['source']}")
-        if r["link"]:
-            st.link_button("Open document", r["link"], use_container_width=False)
+**Ten Lenses:** Abstraction, Adaptability, Ambition, Coverage, Governance, Orientation, Motivation, Access, Delivery, Decision.
+""")
