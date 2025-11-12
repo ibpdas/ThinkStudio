@@ -1,11 +1,10 @@
 
 # ---------------------------
-# Public Sector Data Strategy Explorer — Theme‑Free (Debug + Fallback Visuals)
+# Public Sector Data Strategy Explorer — Minimal (No Archetype, No Explorer)
 # ---------------------------
 import os, glob, time
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 
 # Optional fuzzy search
@@ -17,20 +16,12 @@ except Exception:
 
 REQUIRED = [
     "id","title","organisation","org_type","country","year","scope",
-    "link","archetypes","summary","source","date_added"
+    "link","summary","source","date_added"
 ]
-
-ARCH_HELP = {
-    "foundational":"Building quality, governance, and standards",
-    "transformational":"Driving innovation and change (e.g., AI, automation)",
-    "collaborative":"Federated, cross‑government sharing and partnerships",
-    "insight-led":"Evidence‑based decisions and analytics",
-    "citizen-focused":"Trust, transparency, and service design"
-}
 
 st.set_page_config(page_title="Public Sector Data Strategy Explorer", layout="wide")
 st.title("Public Sector Data Strategy Explorer")
-st.caption("Theme‑free, archetypes‑only — with robust fallbacks so you always see charts.")
+st.caption("Minimal build: no archetype charts, no explorer table; details include summaries.")
 
 # --- Data source picker (any CSV in current folder)
 csv_files = sorted([f for f in glob.glob("*.csv") if os.path.isfile(f)])
@@ -68,12 +59,12 @@ def load_data(path: str, modified_time: float):
     return df
 
 try:
-    df = load_data(csv_path, mtime)
+    df = load_data(csv_path, os.path.getmtime(csv_path))
 except Exception as e:
     st.error(f"⚠️ {e}")
     st.stop()
 
-# --- Sidebar filters
+# --- Sidebar filters (metadata only)
 with st.sidebar:
     st.subheader("Filters")
     years = sorted(y for y in df["year"].dropna().unique())
@@ -93,17 +84,9 @@ with st.sidebar:
     scopes = sorted([v for v in df["scope"].unique() if v != ""])
     scope_sel = st.multiselect("Scope", scopes, default=scopes)
 
-    arch_all = ["foundational","transformational","collaborative","insight-led","citizen-focused"]
-    arch_sel = st.multiselect("Archetype (any)", arch_all, default=[],
-                              help="Filter strategies by any of the selected archetypes.")
-
     q = st.text_input("Search title, organisation, summary", "", help="Fuzzy search on title/organisation/summary.")
     st.markdown("---")
     debug = st.checkbox("Show debug info")
-
-def toks(cell):
-    if not cell: return []
-    return [t.strip() for t in str(cell).split(";") if t.strip()]
 
 def fuzzy_filter(df, query, limit=500):
     if not query:
@@ -129,18 +112,10 @@ if country_sel:
     fdf = fdf[fdf["country"].isin(country_sel)]
 if scope_sel:
     fdf = fdf[fdf["scope"].isin(scope_sel)]
-
-if arch_sel:
-    fdf = fdf[fdf["archetypes"].apply(lambda s: any(a in set(toks(s)) for a in arch_sel))]
-
 fdf = fuzzy_filter(fdf, q)
 
-# --- Data health panel
-has_arch = fdf["archetypes"].astype(str).str.len() > 0
-arch_count = int(has_arch.sum())
-st.info(f"Loaded **{len(df)}** rows from **{csv_path}**. After filters: **{len(fdf)}** rows. "
-        f"Rows with non-empty archetypes: **{arch_count}**.")
-
+# --- Debug
+st.info(f"Loaded **{len(df)}** rows from **{csv_path}**. After filters: **{len(fdf)}** rows.")
 if debug:
     with st.expander("🔎 Debug"):
         st.write("Working directory:", os.getcwd())
@@ -151,46 +126,31 @@ if fdf.empty:
     st.warning("No results match your filters/search. Try clearing a filter or the search box.")
     st.stop()
 
-# --- Visuals (robust fallbacks)
+# --- KPIs
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Strategies", len(fdf))
+c2.metric("Org types", fdf["org_type"].nunique())
+c3.metric("Countries", fdf["country"].nunique())
+yr_min = int(fdf["year"].min()) if pd.notna(fdf["year"].min()) else "—"
+yr_max = int(fdf["year"].max()) if pd.notna(fdf["year"].max()) else "—"
+c4.metric("Year span", f"{yr_min}–{yr_max}")
+
+# --- Visuals (no archetype charts)
 st.subheader("Visuals")
+row1_left, row1_right = st.columns(2)
 
-# 1) Archetype distribution (only if we have archetype tags)
-a_long = []
-for _, r in fdf.iterrows():
-    for a in toks(r.get("archetypes", "")):
-        a_long.append({"arch": a})
-a_df = pd.DataFrame(a_long)
-
-row1_left, row1_right = st.columns([2,1])
-if not a_df.empty:
-    by_arch = a_df.groupby("arch").size().reset_index(name="count").sort_values("count", ascending=False)
-    with row1_left:
-        st.plotly_chart(px.bar(by_arch, x="arch", y="count", title="Strategies by archetype").update_xaxes(tickangle=20), use_container_width=True)
-    with row1_right:
-        st.plotly_chart(px.pie(by_arch, names="arch", values="count", title="Share by archetype"), use_container_width=True)
-else:
-    with row1_left:
-        st.info("No archetype tags found in filtered data. Showing fallback visuals below.")
-
-# 2) Fallback visuals — always available if there are rows
-row2_left, row2_right = st.columns(2)
 if fdf["year"].notna().any():
     by_year = fdf[fdf["year"].notna()].groupby("year").size().reset_index(name="count").sort_values("year")
-    row2_left.plotly_chart(px.bar(by_year, x="year", y="count", title="Strategies by year"), use_container_width=True)
+    row1_left.plotly_chart(px.bar(by_year, x="year", y="count", title="Strategies by year"), use_container_width=True)
 else:
-    row2_left.info("No numeric 'year' values to chart.")
+    row1_left.info("No numeric 'year' values to chart.")
 
 by_org = fdf.groupby("organisation").size().reset_index(name="count").sort_values("count", ascending=False).head(15)
-row2_right.plotly_chart(px.bar(by_org, x="organisation", y="count", title="Top organisations (by count)"), use_container_width=True)
+row1_right.plotly_chart(px.bar(by_org, x="organisation", y="count", title="Top organisations (by count)"), use_container_width=True)
 
 st.markdown("---")
-st.subheader("Explorer")
-show_cols = ["title","organisation","org_type","country","year","scope","archetypes","source"]
-st.dataframe(
-    fdf[show_cols].sort_values(["year","organisation"], ascending=[False, True]),
-    use_container_width=True, hide_index=True
-)
 
+# --- Download filtered CSV
 st.download_button(
     "Download filtered CSV",
     data=fdf.to_csv(index=False).encode("utf-8"),
@@ -198,6 +158,7 @@ st.download_button(
     mime="text/csv"
 )
 
+# --- Details (summary under details)
 st.markdown("### Details")
 for _, r in fdf.sort_values("year", ascending=False).iterrows():
     ytxt = int(r["year"]) if pd.notna(r["year"]) else "—"
@@ -208,10 +169,5 @@ for _, r in fdf.sort_values("year", ascending=False).iterrows():
         meta[1].write(f"**Country:** {r['country']}")
         meta[2].write(f"**Scope:** {r['scope']}")
         meta[3].write(f"**Source:** {r['source']}")
-        archs = [a for a in toks(r.get("archetypes","")) if a]
-        if archs:
-            st.write("**Archetypes:** " + ", ".join(archs))
-        else:
-            st.write("**Archetypes:** —")
         if r["link"]:
             st.link_button("Open document", r["link"], use_container_width=False)
