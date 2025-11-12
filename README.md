@@ -11,7 +11,7 @@
 
 An open, insight driven repository of **UK public sector data strategies, playbooks, and lessons learned** — helping data leaders compare, learn, and write better strategies.
 
-[🏠 Home](README.md) | [📊 Dashboard](https://public-sector-data-strategies.streamlit.app) | [📘 Playbook](playbooks/writing_a_data_strategy.md) | [🧠 Meta Lessons](resources/meta_lessons.md)
+ [📊 Strategy Explorer Dashboard](https://public-sector-data-strategies.streamlit.app) 
 
 ---
 
@@ -22,7 +22,7 @@ It combines official documents, structured metadata, and practical guides for dr
 
 ---
 
-## Who This Is For
+## Who this is for
 - Chief Data Officers and Heads of Data in UK public bodies  
 - Analysts, policy, and digital teams writing new data or AI strategies  
 - Researchers and academics studying government data governance  
@@ -30,7 +30,7 @@ It combines official documents, structured metadata, and practical guides for dr
 
 ---
 
-## Github Contents
+## Github contents
 
 | Folder | Description |
 |---------|--------------|
@@ -42,20 +42,20 @@ It combines official documents, structured metadata, and practical guides for dr
 
 ---
 
-## How To Use This Repo
+## How to use this repository
 
-1. **Explore** [Strategy List](resources/strategies.md) to view national, departmental, and devolved strategies.  
-2. **Draft** or refresh your own strategy reading [Playbook](playbooks/writing_a_data_strategy.md) and [Meta Lessons](resources/meta_lessons.md)
+1. **Explore** `resources/strategies.md`  to view national, departmental, and devolved strategies.  
+2. **Draft** or refresh your own strategy reading `playbooks/writing_a_data_strategy.md` and `resources/meta_lessons.md`
 3. **Contribute** new strategies or updates via Issues → [![Contribute a Strategy](https://img.shields.io/badge/Contribute-Submit%20New%20Strategy-blue)](https://github.com/ibpdas/Public-Sector-Data-Strategies/issues/new?assignees=&labels=enhancement%2Cresource&template=resource_submission.md&title=%F0%9F%92%A1+Strategy+Submission) 
 4. **Discuss** lessons or implementation insights in GitHub Discussions.
 
 ---
 
-## Roadmap
+## Future updates
 
--  [ ] Add international public sector strategies (2025 refresh) to [Strategy List](resources/strategies.md)
--  [ ] Extract recurring insights into [Meta Lessons & Insights](resources/meta_lessons.md)
--  [ ] Update [Playbook](playbooks/writing_a_data_strategy.md)  
+-  [ ] Add international public sector strategies (2025 refresh) to strategy list and explorer
+-  [ ] Synthesise insights into meta lessons
+-  [ ] Update playbook with reuseable templates and examples 
 
 
 ## Contributing
