@@ -179,7 +179,7 @@ def render_lenses_explainer():
 
 # ---------------- TABS ----------------
 tab_explore, tab_types, tab_journey, tab_about = st.tabs(
-    ["🔎 Explore", "👁️ Lenses (Set Profiles)", "🧭 Journey (Compare)", "ℹ️ About"]
+    ["ℹ️ About", "🔎 Explore", "👁️ Lenses (Set Profiles)", "🧭 Journey (Compare)"]
 )
 
 
