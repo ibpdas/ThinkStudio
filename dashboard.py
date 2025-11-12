@@ -1,3 +1,4 @@
+
 # ---------------------------
 # Public Sector Data Strategy Explorer — Option B (Enhanced)
 # ---------------------------
@@ -346,6 +347,4 @@ This tool classifies public-sector data strategies using a ten‑dimension **arc
         st.markdown(f"- **{key}** — {ARCH_REF.get(key, 'No description')}")
 
     st.caption("© Contributors. Open for reuse under the Open Government Licence (where applicable).")
-        st.write(f"**Pillars:** {', '.join(tokenize_semicol(r['pillars'])) or '—'}")
-        if r["link"]:
-            st.link_button("Open document", r["link"], use_container_width=False)
+
