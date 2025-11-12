@@ -1,9 +1,9 @@
 
 # ---------------------------------------------------
-# Public Sector Data Strategy Explorer — Uploader + Sidebar About
-# v1.4 – 2025-11-12 12:45 (sidebar-about)
+# Public Sector Data Strategy Explorer — Reverted Layout + Embedded About
+# v1.5 – 2025-11-12 13:05 (reverted-tabs)
 # ---------------------------------------------------
-import os, glob, time, json, hashlib, io
+import os, glob, time, io, json, hashlib
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -15,12 +15,12 @@ try:
 except Exception:
     HAS_RAPIDFUZZ = False
 
-APP_VERSION = "v1.4 – 2025-11-12 12:45 (sidebar-about)"
+APP_VERSION = "v1.5 – 2025-11-12 13:05 (reverted-tabs)"
 
 st.set_page_config(page_title="Public Sector Data Strategy Explorer", layout="wide")
 st.markdown(f"💡 **App version:** {APP_VERSION}")
 st.title("Public Sector Data Strategy Explorer")
-st.caption("Lenses = tensions to manage • Profile = your chosen balance • Journey = current → target. (No presets)")
+st.caption("Lenses = tensions to manage • Profile = your chosen balance • Journey = current → target.")
 
 REQUIRED = [
     "id","title","organisation","org_type","country","year","scope",
@@ -55,23 +55,67 @@ def load_data_from_bytes(content: bytes, file_hash: str, app_version: str):
     df["year"] = pd.to_numeric(df["year"], errors="coerce")
     return df
 
-# ---------------- DEFAULT DATA (before user overrides) ----------------
-csv_files = sorted([f for f in glob.glob("*.csv") if os.path.isfile(f)])
-default_csv = "strategies.csv" if "strategies.csv" in csv_files else (csv_files[0] if csv_files else None)
-if not csv_files and "uploaded_bytes" not in st.session_state:
-    st.error("No CSV found. Use the Explore tab ▸ Data source expander to upload a CSV, or place one next to the app.")
-    st.stop()
+# ---------------- Sidebar: data source + reload + filters ----------------
+with st.sidebar:
+    st.subheader("Data source")
+    uploaded = st.file_uploader("Upload a strategies CSV", type=["csv"], key="uploader")
+    st.caption("CSV must include required columns. Use the template if needed.")
+    st.download_button("Download template CSV", data=(
+        "id,title,organisation,org_type,country,year,scope,link,summary,source,date_added\n"
+        "1,Example Strategy,Example Dept,Ministry,UK,2024,National,https://example.com,Short summary...,Official site,2024-11-12\n"
+    ).encode("utf-8"), file_name="strategies_template.csv", mime="text/csv")
 
-# Load default df (can be overridden in Explore tab expander)
-if "uploaded_bytes" in st.session_state:
-    content = st.session_state["uploaded_bytes"]
-    df = load_data_from_bytes(content, bytes_md5(content), APP_VERSION)
+    st.markdown("---")
+    csv_files = sorted([f for f in glob.glob('*.csv') if os.path.isfile(f)])
+    default_csv = "strategies.csv" if "strategies.csv" in csv_files else (csv_files[0] if csv_files else None)
+    csv_path = None
+    if not uploaded:
+        if csv_files:
+            csv_path = st.selectbox("Or select a CSV from directory", options=csv_files, index=csv_files.index(default_csv) if default_csv else 0, key="csv_select")
+            try:
+                mtime = os.path.getmtime(csv_path)
+                st.caption(f"📄 **{csv_path}** — last modified: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))}")
+                st.caption(f"🔑 MD5: {file_md5(csv_path)[:12]}…")
+            except Exception:
+                st.caption("📄 File time unknown.")
+        else:
+            st.info("No CSV found. Upload one above or add a file to the directory.")
+
+    cols = st.columns(2)
+    if cols[0].button("🔄 Reload (clear cache)"):
+        st.cache_data.clear()
+        st.rerun()
+    if cols[1].button("🧹 Hard refresh (cache + state)"):
+        st.cache_data.clear()
+        for k in list(st.session_state.keys()):
+            del st.session_state[k]
+        st.rerun()
+
+    st.markdown("---")
+    st.subheader("Filters")
+    # Filters will be populated after df is loaded
+
+# ---------------- Decide data frame ----------------
+df = None
+if uploaded is not None:
+    content = uploaded.read()
+    try:
+        df = load_data_from_bytes(content, bytes_md5(content), APP_VERSION)
+        st.sidebar.success(f"Loaded uploaded CSV — {len(df)} rows (MD5 {bytes_md5(content)[:12]}…)")
+    except Exception as e:
+        st.sidebar.error(f"Upload error: {e}")
+        st.stop()
 else:
-    # pick default or first
-    pick = default_csv if default_csv else csv_files[0]
-    df = load_data_from_path(pick, file_md5(pick), APP_VERSION)
+    if not csv_files:
+        st.error("No CSV file available. Please upload one in the sidebar.")
+        st.stop()
+    try:
+        df = load_data_from_path(csv_path, file_md5(csv_path), APP_VERSION)
+    except Exception as e:
+        st.error(f"⚠️ {e}")
+        st.stop()
 
-# ---------------- MODEL ----------------
+# ---------------- Model: Ten Lenses ----------------
 AXES = [
     ("Abstraction Level", "Conceptual", "Logical / Physical"),
     ("Adaptability", "Living", "Fixed"),
@@ -108,110 +152,7 @@ def fuzzy(df_in, q, limit=400):
         mask = text.str.contains(q, case=False, na=False)
         return df_in[mask].head(limit)
 
-# Lenses explainer content (practical)
-LENSES_EXAMPLES = {
-    "Abstraction Level": {
-        "left": "Conceptual strategy clarifies principles, outcomes, and direction",
-        "right": "Logical/Physical specifies models, standards, platforms",
-        "when_left": "When you need sponsorship & shared intent across leaders",
-        "when_right": "When delivery is blocked by unclear ownership/architecture",
-        "example": "Start with a 1‑page narrative (conceptual) then publish a canonical data model (logical)."
-    },
-    "Adaptability": {
-        "left": "Living strategy that iterates with tech/policy change",
-        "right": "Fixed guardrails for consistency and auditability",
-        "when_left": "Fast‑changing domains (AI, climate risk, emergencies)",
-        "when_right": "Regulated or safety‑critical contexts",
-        "example": "Quarterly roadmap reviews with change log; stable retention policy."
-    },
-    "Ambition": {
-        "left": "Essential data management (quality, stewardship, metadata)",
-        "right": "Transformational use of AI/automation for services/outcomes",
-        "when_left": "Data quality debt, unclear lineage, poor trust",
-        "when_right": "Strong foundations and clear value hypotheses",
-        "example": "Fix reference data + metadata first → then pilot AI triage on service cases."
-    },
-    "Coverage": {
-        "left": "Horizontal capability across the organisation",
-        "right": "Use‑case exemplars to prove value quickly",
-        "when_left": "Silo fragmentation and inconsistent methods",
-        "when_right": "Need quick wins to unlock sponsorship",
-        "example": "Standards + training (horizontal) while delivering 2 flagship use‑cases."
-    },
-    "Governance Structure": {
-        "left": "Ecosystem/Federated with domain ownership",
-        "right": "Centralised for coherence and single point of accountability",
-        "when_left": "Diverse domains need autonomy within guardrails",
-        "when_right": "Crisis, reset, or heavy risk exposure",
-        "example": "Domain data owners + central guardrails, catalogue, and design authority."
-    },
-    "Orientation": {
-        "left": "Technology‑focused investments (platforms, pipelines, MDM)",
-        "right": "Value‑focused outcomes (policy, service, citizen impact)",
-        "when_left": "Missing core capabilities or tooling debt",
-        "when_right": "Stakeholders need measurable policy/service wins",
-        "example": "Prioritise ‘value slices’ that also uplift platform capability."
-    },
-    "Motivation": {
-        "left": "Compliance‑driven (legal, audit, risk)",
-        "right": "Innovation‑driven (opportunity, growth, modernisation)",
-        "when_left": "Regulatory deadlines or risk incidents",
-        "when_right": "Mature controls; pressure to improve outcomes",
-        "example": "DPIAs, privacy‑by‑design; then sandbox new ML approaches."
-    },
-    "Access Philosophy": {
-        "left": "Data‑democratised (open by default where safe)",
-        "right": "Controlled access (least privilege)",
-        "when_left": "To reduce shadow data and enable reuse",
-        "when_right": "Sensitive data and lawful basis constraints",
-        "example": "Tiered access: open → internal → restricted → highly sensitive."
-    },
-    "Delivery Mode": {
-        "left": "Incremental, iterative releases",
-        "right": "Big Bang step‑change programmes",
-        "when_left": "High uncertainty; need feedback loops",
-        "when_right": "Mandated deadlines or platform migration",
-        "example": "Monthly drops for catalogue improvements; time‑boxed migration cutover."
-    },
-    "Decision Model": {
-        "left": "Data‑informed (human‑in‑the‑loop)",
-        "right": "Data‑driven (automation where safe)",
-        "when_left": "Complex, value‑laden policy choices",
-        "when_right": "High‑volume, repeatable operational decisions",
-        "example": "Human policy panels for trade‑offs; automated fraud triage."
-    }
-}
-
-def render_lenses_explainer():
-    st.markdown("### 👁️ Lenses explainer & practical examples")
-    st.caption("Each slider represents a **tension to manage**. Use the notes below to decide which way to lean for your context.")
-    for dim, left, right in AXES:
-        ex = LENSES_EXAMPLES.get(dim, {})
-        with st.expander(f"{dim} — {left} ↔ {right}"):
-            st.markdown(f"- **{left}:** {ex.get('left','')}")
-            st.markdown(f"- **{right}:** {ex.get('right','')}")
-            st.markdown(f"- **Lean {left.lower()} when:** {ex.get('when_left','')}")
-            st.markdown(f"- **Lean {right.lower()} when:** {ex.get('when_right','')}")
-            st.markdown(f"- **Example:** {ex.get('example','')}")
-
-# ---------------- Sidebar: About (before Filters) ----------------
-with st.sidebar:
-    st.subheader("About this tool")
-    st.markdown("""
-**Purpose:** help public bodies **design, communicate, and iterate** their data strategy by making trade‑offs explicit and turning gaps into actions.
-
-**Who it’s for:** CDOs/Heads of Data, policy & ops leaders, analysts/data teams, PMOs/transformation.
-
-**How to use:**
-1) Explore the landscape  
-2) Set Current & Target profiles (Ten Lenses)  
-3) Compare in Journey and prioritise 3 shifts  
-4) Re‑assess quarterly
-""")
-    st.markdown("---")
-    st.subheader("Filters")
-
-# ---------------- EXPLORE CHARTS ----------------
+# ---------------- Charts for Explore ----------------
 def render_explore_charts(fdf: pd.DataFrame):
     st.markdown("## 📊 Explore — Landscape & Patterns")
     k1, k2, k3, k4 = st.columns(4)
@@ -288,63 +229,15 @@ def render_explore_charts(fdf: pd.DataFrame):
         fig_scope = px.pie(by_scope, names="scope", values="count", title="Strategy scope breakdown")
         st.plotly_chart(fig_scope, use_container_width=True)
 
-# ---------------- TABS ----------------
-tab_explore, tab_lenses, tab_journey = st.tabs(
-    ["🔎 Explore", "👁️ Lenses (Set Profiles)", "🧭 Journey (Compare)"]
+# ---------------- Tabs ----------------
+tab_explore, tab_lenses, tab_journey, tab_about = st.tabs(
+    ["🔎 Explore", "👁️ Lenses (Set Profiles)", "🧭 Journey (Compare)", "ℹ️ About"]
 )
 
 # ====================================================
 # 🔎 EXPLORE
 # ====================================================
 with tab_explore:
-    # Data source expander (moved from sidebar)
-    with st.expander("📁 Data source & refresh", expanded=False):
-        uploaded = st.file_uploader("Upload a strategies CSV", type=["csv"], key="uploader_main")
-        st.caption("Tip: CSV must include required columns. Use the template below if needed.")
-        st.download_button("Download template CSV", data=(
-            "id,title,organisation,org_type,country,year,scope,link,summary,source,date_added\n"
-            "1,Example Strategy,Example Dept,Ministry,UK,2024,National,https://example.com,Short summary...,Official site,2024-11-12\n"
-        ).encode("utf-8"), file_name="strategies_template.csv", mime="text/csv")
-
-        st.markdown("---")
-        csv_files_local = sorted([f for f in glob.glob('*.csv') if os.path.isfile(f)])
-        if csv_files_local:
-            default_csv_local = "strategies.csv" if "strategies.csv" in csv_files_local else csv_files_local[0]
-            sel = st.selectbox("Or select a CSV from directory", options=csv_files_local, index=csv_files_local.index(default_csv_local))
-            if st.button("Load selected file"):
-                st.session_state.pop("uploaded_bytes", None)
-                st.cache_data.clear()
-                try:
-                    df_new = load_data_from_path(sel, file_md5(sel), APP_VERSION)
-                    df = df_new
-                    st.success(f"Loaded {sel} — {len(df)} rows (MD5 {file_md5(sel)[:12]}…)")
-                except Exception as e:
-                    st.error(f"⚠️ {e}")
-        else:
-            st.info("No CSV files found in directory. Upload one above.")
-
-        cols = st.columns(2)
-        if cols[0].button("🔄 Reload (clear cache)"):
-            st.cache_data.clear()
-            st.rerun()
-        if cols[1].button("🧹 Hard refresh (cache + state)"):
-            st.cache_data.clear()
-            for k in list(st.session_state.keys()):
-                del st.session_state[k]
-            st.rerun()
-
-        if uploaded is not None:
-            content = uploaded.read()
-            try:
-                df_new = load_data_from_bytes(content, bytes_md5(content), APP_VERSION)
-                st.session_state["uploaded_bytes"] = content
-                st.cache_data.clear()
-                st.success(f"Loaded uploaded CSV — {len(df_new)} rows (MD5 {bytes_md5(content)[:12]}…)")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Upload error: {e}")
-
-    # Sidebar filters (now only filters after About)
     with st.sidebar:
         years = sorted(y for y in df["year"].dropna().unique())
         if years:
@@ -360,28 +253,16 @@ with tab_explore:
         q = st.text_input("Search title/org/summary")
 
     fdf = df.copy()
-    if 'yr' in locals() and yr:
-        fdf = fdf[fdf["year"].between(yr[0], yr[1])]
-    if 'org_type_sel' in locals() and org_type_sel:
-        fdf = fdf[fdf["org_type"].isin(org_type_sel)]
-    if 'country_sel' in locals() and country_sel:
-        fdf = fdf[fdf["country"].isin(country_sel)]
-    if 'scope_sel' in locals() and scope_sel:
-        fdf = fdf[fdf["scope"].isin(scope_sel)]
-    if 'q' in locals():
-        text = (fdf["title"] + " " + fdf["organisation"] + " " + fdf["summary"]).fillna("")
-        if q:
-            if HAS_RAPIDFUZZ:
-                matches = process.extract(q, text.tolist(), scorer=fuzz.WRatio, limit=len(text))
-                keep = [i for _, s, i in matches if s >= 60]
-                fdf = fdf.iloc[keep]
-            else:
-                fdf = fdf[text.str.contains(q, case=False, na=False)]
+    if yr: fdf = fdf[fdf["year"].between(yr[0], yr[1])]
+    if org_type_sel: fdf = fdf[fdf["org_type"].isin(org_type_sel)]
+    if country_sel: fdf = fdf[fdf["country"].isin(country_sel)]
+    if scope_sel: fdf = fdf[fdf["scope"].isin(scope_sel)]
+    if q:
+        fdf = fuzzy(fdf, q)
 
     st.info(f"{len(fdf)} strategies shown")
     if not fdf.empty:
         render_explore_charts(fdf)
-
         st.markdown("### Details")
         for _, r in fdf.iterrows():
             with st.expander(f"📄 {r['title']} — {r['organisation']} ({int(r['year']) if pd.notna(r['year']) else '—'})"):
@@ -402,14 +283,7 @@ with tab_lenses:
     st.caption("0 = left label • 100 = right label. Use the left column for CURRENT, right for TARGET.")
 
     st.markdown("_Use the expanders below for practical examples on when to lean left/right._")
-    for dim, left, right in AXES:
-        ex = LENSES_EXAMPLES.get(dim, {})
-        with st.expander(f"{dim} — {left} ↔ {right}"):
-            st.markdown(f"- **{left}:** {ex.get('left','')}")
-            st.markdown(f"- **{right}:** {ex.get('right','')}")
-            st.markdown(f"- **Lean {left.lower()} when:** {ex.get('when_left','')}")
-            st.markdown(f"- **Lean {right.lower()} when:** {ex.get('when_right','')}")
-            st.markdown(f"- **Example:** {ex.get('example','')}")
+    # Minimal explainer bullets derived from the AXES could be added here if needed.
 
     ensure_sessions()
     colL, colR = st.columns(2)
@@ -492,3 +366,85 @@ with tab_journey:
         st.markdown("\n".join(bullets))
     else:
         st.info("Current and target are identical — no change required.")
+
+# ====================================================
+# ℹ️ ABOUT  — embedded exactly as requested
+# ====================================================
+with tab_about:
+
+    # --- BEGIN: User-provided About function content ---
+    import streamlit as st
+    import plotly.graph_objects as go
+    import pandas as pd
+
+    def render_about_tab_full(container, AXES):
+        with container:
+            st.subheader("About this Explorer")
+
+            # --- Purpose & Audience
+            st.markdown("""
+### 🎯 Purpose
+Help public bodies **design, communicate, and iterate** their data strategy by making
+the **key tensions** explicit, comparing **current vs target**, and turning gaps into **prioritised actions**.
+
+The **Public Sector Data Strategy Explorer** helps you understand **how data strategies differ** — in scope, ambition, and governance.  
+It combines a searchable dataset of real strategies with a conceptual framework called **The Ten Lenses of Data Strategy**.
+""")
+
+            st.markdown("""
+### 👥 Who it's for
+- **CDOs / Heads of Data** — set direction and align leadership  
+- **Policy & Operations leaders** — frame trade-offs and agree priorities  
+- **Analysts & Data teams** — translate strategy into delivery  
+- **PMOs / Transformation** — track progress and course-correct
+""")
+
+            # --- How to use
+            st.markdown("""
+### 🛠️ How to use this tool
+1) **Explore** the landscape of strategies (by year, country, org type) for context.  
+2) **Set profiles** using the **Ten Lenses** sliders to define **Current** and **Target** positions.  
+3) **Compare** in the **Journey** tab to see directional gaps (left/right) and magnitudes.  
+4) **Prioritise** the top shifts and convert them into actions (owners, timelines, measures).  
+5) **Re-assess regularly** — treat your strategy as a **living** thing.
+""")
+
+            # --- Explanation & Public-Sector Examples (Ten Lenses)
+            st.markdown("### 🔍 Explanation and Public-Sector Examples")
+            st.markdown("""
+| # | Lens | Description | Public-Sector Example |
+|---|------|-------------|----------------------|
+| **1** | **Abstraction Level** | **Conceptual** strategies define vision and principles; **Logical / Physical** specify architecture and governance. | A national “Data Vision 2030” is conceptual; a departmental “Data Architecture Blueprint” is logical/physical. |
+| **2** | **Adaptability** | **Living** evolves with new tech and policy; **Fixed** provides a stable framework. | The UK’s AI white paper is living; GDPR is fixed. |
+| **3** | **Ambition** | **Essential** ensures foundations; **Transformational** drives innovation and automation. | NHS data governance reforms are essential; Estonia’s X-Road is transformational. |
+| **4** | **Coverage** | **Horizontal** builds maturity across all functions; **Use-case-based** targets exemplar projects. | A cross-government maturity model vs a sector-specific pilot. |
+| **5** | **Governance Structure** | **Ecosystem / Federated** encourages collaboration; **Centralised** ensures uniform control. | UK’s federated CDO network vs Singapore’s Smart Nation. |
+| **6** | **Orientation** | **Technology-focused** emphasises platforms; **Value-focused** prioritises outcomes and citizens. | A cloud migration roadmap vs a policy-impact dashboard. |
+| **7** | **Motivation** | **Compliance-driven** manages risk; **Innovation-driven** creates opportunity. | GDPR compliance vs data-sharing sandboxes. |
+| **8** | **Access Philosophy** | **Democratised** broadens data access; **Controlled** enforces permissions. | Open data portals vs restricted health datasets. |
+| **9** | **Delivery Mode** | **Incremental** iterates and tests; **Big Bang** transforms at once. | Local pilots vs national-scale reform. |
+| **10** | **Decision Model** | **Data-informed** blends human judgment; **Data-driven** relies on analytics/automation. | Evidence-based policymaking vs automated fraud detection. |
+""")
+
+            st.markdown("---")
+
+            # --- FAQs
+            st.markdown("""
+### ❓ FAQs
+**Is one side of a lens better?**  
+No — positions reflect context and risk appetite. The goal is **conscious balance**.
+
+**What if Current and Target are far apart?**  
+That’s good information: pick **three shifts** to start; avoid Big-Bang unless mandated.
+
+**How do we decide left vs right?**  
+Use the **Lenses** tab — each lens includes when to lean left/right and a concrete example.
+""")
+
+            # --- Closing tip
+            st.markdown("> **“Every data strategy is a balancing act — between governance and growth, structure and experimentation, control and creativity.”**")
+    # --- END: User-provided About function content ---
+
+    # Render it into the About tab container
+    render_about_tab_full(tab_about, AXES)
+
