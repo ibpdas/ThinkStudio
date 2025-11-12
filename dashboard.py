@@ -1,9 +1,9 @@
 
 # ---------------------------------------------------
-# Public Sector Data Strategy Explorer — Hide Datasource in Sidebar
-# v1.6 – 2025-11-12 13:20 (hide-datasource)
+# Public Sector Data Strategy Explorer — Landing Page Build
+# v1.7 – 2025-11-12 13:35 (landing)
 # ---------------------------------------------------
-import os, glob, time, io, json, hashlib
+import os, glob, time, io, json, hashlib, base64
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -15,12 +15,34 @@ try:
 except Exception:
     HAS_RAPIDFUZZ = False
 
-APP_VERSION = "v1.6 – 2025-11-12 13:20 (hide-datasource)"
+APP_VERSION = "v1.7 – 2025-11-12 13:35 (landing)"
 
 st.set_page_config(page_title="Public Sector Data Strategy Explorer", layout="wide")
 st.markdown(f"💡 **App version:** {APP_VERSION}")
 st.title("Public Sector Data Strategy Explorer")
-st.caption("Lenses = tensions to manage • Profile = your chosen balance • Journey = current → target.")
+st.caption("Balance the ten tensions. Profile your current vs target. Plan the journey.")
+
+# --- Simple brand accent (CSS) ---
+ACCENT = "#0072CE"  # Gov blue
+st.markdown(f"""
+<style>
+/* Top accent bar */
+.app-top-bar {{
+  position: fixed; top:0; left:0; right:0; height:4px; background:{ACCENT}; z-index:1000;
+}}
+.block-container {{ padding-top: 1.4rem; }}
+.badge {{
+  display:inline-block; padding:2px 8px; border-radius:999px; background:{ACCENT}15; color:{ACCENT}; font-size:0.8rem; margin-right:6px;
+}}
+.hero h1 {{ margin-bottom:0.2rem !important; }}
+.hero .subtitle {{ color:#444; font-size:1.05rem; }}
+.card {{
+  border:1px solid #EEE; border-radius:12px; padding:16px; box-shadow:0 1px 2px rgba(0,0,0,0.03);
+}}
+.smallmuted {{ color:#6b6b6b; font-size:0.85rem; }}
+</style>
+<div class="app-top-bar"></div>
+""", unsafe_allow_html=True)
 
 REQUIRED = [
     "id","title","organisation","org_type","country","year","scope",
@@ -56,7 +78,6 @@ def load_data_from_bytes(content: bytes, file_hash: str, app_version: str):
     return df
 
 # ---------------- Load initial dataframe ----------------
-# Priority: uploaded in session > strategies.csv > first csv in folder
 csv_files = sorted([f for f in glob.glob('*.csv') if os.path.isfile(f)])
 default_csv = "strategies.csv" if "strategies.csv" in csv_files else (csv_files[0] if csv_files else None)
 
@@ -66,8 +87,8 @@ if "uploaded_bytes" in st.session_state:
 elif default_csv:
     df = load_data_from_path(default_csv, file_md5(default_csv), APP_VERSION)
 else:
-    st.error("No CSV detected. Open the Explore tab ▸ Data source & reload, and upload a CSV.")
-    st.stop()
+    # If no data yet, create an empty df with required columns (so Home still renders)
+    df = pd.DataFrame(columns=REQUIRED)
 
 # ---------------- Model: Ten Lenses ----------------
 AXES = [
@@ -94,6 +115,8 @@ def ensure_sessions():
         st.session_state["_current_scores"] = {d:50 for d in DIMENSIONS}
     if "_target_scores" not in st.session_state:
         st.session_state["_target_scores"] = {d:50 for d in DIMENSIONS}
+    if "_active_tab" not in st.session_state:
+        st.session_state["_active_tab"] = "Home"
 
 def fuzzy(df_in, q, limit=400):
     if not q: return df_in
@@ -184,15 +207,86 @@ def render_explore_charts(fdf: pd.DataFrame):
         st.plotly_chart(fig_scope, use_container_width=True)
 
 # ---------------- Tabs ----------------
-tab_explore, tab_lenses, tab_journey, tab_about = st.tabs(
-    ["🔎 Explore", "👁️ Lenses (Set Profiles)", "🧭 Journey (Compare)", "ℹ️ About"]
+ensure_sessions()
+tab_home, tab_explore, tab_lenses, tab_journey, tab_about = st.tabs(
+    ["🏠 Home", "🔎 Explore", "👁️ Lenses (Set Profiles)", "🧭 Journey (Compare)", "ℹ️ About"]
 )
+
+# ====================================================
+# 🏠 HOME (Landing)
+# ====================================================
+with tab_home:
+    st.markdown('<div class="hero">', unsafe_allow_html=True)
+    st.header("Design better data strategies, faster.")
+    st.markdown('<div class="subtitle">Make trade‑offs explicit, align leadership, and turn gaps into action.</div>', unsafe_allow_html=True)
+    st.markdown('<span class="badge">Public sector</span> <span class="badge">Ten lenses</span> <span class="badge">Compare journeys</span>', unsafe_allow_html=True)
+
+    cta1, cta2, cta3 = st.columns([1,1,1])
+    with cta1:
+        if st.button("Start with Explore →"):
+            st.session_state["_active_tab"] = "Explore"
+            st.experimental_rerun()
+    with cta2:
+        if st.button("Set your Profiles →"):
+            st.session_state["_active_tab"] = "Lenses"
+            st.experimental_rerun()
+    with cta3:
+        if st.button("See the Journey →"):
+            st.session_state["_active_tab"] = "Journey"
+            st.experimental_rerun()
+
+    st.markdown("### What’s inside")
+    colA, colB, colC = st.columns(3)
+    with colA:
+        st.markdown("""
+<div class="card">
+**Explore**  
+Filter strategies by year, country, org type; see patterns, maps, timelines; review details.
+</div>
+""", unsafe_allow_html=True)
+    with colB:
+        st.markdown("""
+<div class="card">
+**Lenses**  
+Ten strategic tensions: set **Current** vs **Target** using sliders; download profiles.
+</div>
+""", unsafe_allow_html=True)
+    with colC:
+        st.markdown("""
+<div class="card">
+**Journey**  
+Gap analysis with radar + bars; auto‑prioritise top shifts; turn into actions.
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown("### Quick status")
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Rows loaded", len(df))
+    k2.metric("Countries", df["country"].nunique() if "country" in df.columns else 0)
+    k3.metric("Org types", df["org_type"].nunique() if "org_type" in df.columns else 0)
+    k4.metric("Last updated", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) )
+
+    st.markdown("---")
+    st.markdown("""
+**Changelog**  
+- v1.7 (today): Added Home landing with CTAs, status, and badges; minor styling.  
+- v1.6: Moved data source to Explore expander; sidebar shows only filters.  
+- v1.5: Reverted tabs; embedded About content; improved cache-busting for CSV.
+""")
+
+# Jump user to the tab they clicked from Home
+if st.session_state.get("_active_tab") == "Explore":
+    st.experimental_set_query_params(tab="Explore")
+elif st.session_state.get("_active_tab") == "Lenses":
+    st.experimental_set_query_params(tab="Lenses")
+elif st.session_state.get("_active_tab") == "Journey":
+    st.experimental_set_query_params(tab="Journey")
 
 # ====================================================
 # 🔎 EXPLORE
 # ====================================================
 with tab_explore:
-    # Keep datasource controls here (not in sidebar)
+    # Datasource expander in Explore
     with st.expander("📁 Data source & reload", expanded=False):
         uploaded = st.file_uploader("Upload a strategies CSV", type=["csv"], key="uploader_main")
         st.caption("CSV must include required columns. Use the template below if needed.")
@@ -239,7 +333,7 @@ with tab_explore:
             except Exception as e:
                 st.error(f"Upload error: {e}")
 
-    # Sidebar shows only filters (no datasource)
+    # Sidebar shows only filters
     with st.sidebar:
         st.subheader("Filters")
         years = sorted(y for y in df["year"].dropna().unique())
@@ -372,7 +466,7 @@ with tab_journey:
         st.info("Current and target are identical — no change required.")
 
 # ====================================================
-# ℹ️ ABOUT  — embedded as requested earlier
+# ℹ️ ABOUT — embedded as requested earlier
 # ====================================================
 with tab_about:
 
