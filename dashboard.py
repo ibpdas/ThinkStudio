@@ -1,8 +1,8 @@
+
 # ---------------------------
-# Public Sector Data Strategy Explorer — Theme‑Free (with Reload + Source Picker)
+# Public Sector Data Strategy Explorer — Theme‑Free (Debug + Fallback Visuals)
 # ---------------------------
-import os, glob
-import time
+import os, glob, time
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -30,7 +30,7 @@ ARCH_HELP = {
 
 st.set_page_config(page_title="Public Sector Data Strategy Explorer", layout="wide")
 st.title("Public Sector Data Strategy Explorer")
-st.caption("Theme‑free, archetypes‑only — with data‑source picker and reload switch.")
+st.caption("Theme‑free, archetypes‑only — with robust fallbacks so you always see charts.")
 
 # --- Data source picker (any CSV in current folder)
 csv_files = sorted([f for f in glob.glob("*.csv") if os.path.isfile(f)])
@@ -42,7 +42,6 @@ if not csv_files:
 with st.sidebar:
     st.subheader("Data source")
     csv_path = st.selectbox("CSV file", options=csv_files, index=csv_files.index(default_csv) if default_csv else 0)
-    # show file stats
     try:
         mtime = os.path.getmtime(csv_path)
         st.caption(f"📄 **{csv_path}** — last modified: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))}")
@@ -50,12 +49,10 @@ with st.sidebar:
         mtime = 0
         st.caption(f"📄 **{csv_path}** — last modified: unknown")
 
-    reload_now = st.button("🔄 Reload data (clear cache)")
-    if reload_now:
+    if st.button("🔄 Reload data (clear cache)"):
         st.cache_data.clear()
         st.experimental_rerun()
 
-# --- Loader: cache keyed by (csv_path, mtime), so edits invalidate cache
 @st.cache_data(show_spinner=False)
 def load_data(path: str, modified_time: float):
     if not os.path.exists(path):
@@ -138,46 +135,53 @@ if arch_sel:
 
 fdf = fuzzy_filter(fdf, q)
 
-# --- Debug
-top_note = f"Loaded **{len(df)}** rows from **{csv_path}** (last modified {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))})."
-st.info(top_note)
+# --- Data health panel
+has_arch = fdf["archetypes"].astype(str).str.len() > 0
+arch_count = int(has_arch.sum())
+st.info(f"Loaded **{len(df)}** rows from **{csv_path}**. After filters: **{len(fdf)}** rows. "
+        f"Rows with non-empty archetypes: **{arch_count}**.")
+
 if debug:
     with st.expander("🔎 Debug"):
         st.write("Working directory:", os.getcwd())
         st.write("Files:", os.listdir("."))
-        st.write("Rows loaded:", len(df), "| Rows after filters:", len(fdf))
-        st.dataframe(df.head(), use_container_width=True)
+        st.dataframe(fdf.head(), use_container_width=True)
 
 if fdf.empty:
     st.warning("No results match your filters/search. Try clearing a filter or the search box.")
     st.stop()
 
-# --- KPIs
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Strategies", len(fdf))
-c2.metric("Org types", fdf["org_type"].nunique())
-c3.metric("Countries", fdf["country"].nunique())
-yr_min = int(fdf["year"].min()) if pd.notna(fdf["year"].min()) else "—"
-yr_max = int(fdf["year"].max()) if pd.notna(fdf["year"].max()) else "—"
-c4.metric("Year span", f"{yr_min}–{yr_max}")
+# --- Visuals (robust fallbacks)
+st.subheader("Visuals")
 
-# --- Archetype distribution
-st.subheader("Archetypes snapshot")
+# 1) Archetype distribution (only if we have archetype tags)
 a_long = []
 for _, r in fdf.iterrows():
     for a in toks(r.get("archetypes", "")):
         a_long.append({"arch": a})
 a_df = pd.DataFrame(a_long)
+
+row1_left, row1_right = st.columns([2,1])
 if not a_df.empty:
-    left, right = st.columns([2,1])
-    with left:
-        by_arch = a_df.groupby("arch").size().reset_index(name="count").sort_values("count", ascending=False)
-        fig = px.bar(by_arch, x="arch", y="count", title="Strategies by archetype")
-        fig.update_xaxes(tickangle=20)
-        st.plotly_chart(fig, use_container_width=True)
-    with right:
-        fig2 = px.pie(by_arch, names="arch", values="count", title="Share by archetype")
-        st.plotly_chart(fig2, use_container_width=True)
+    by_arch = a_df.groupby("arch").size().reset_index(name="count").sort_values("count", ascending=False)
+    with row1_left:
+        st.plotly_chart(px.bar(by_arch, x="arch", y="count", title="Strategies by archetype").update_xaxes(tickangle=20), use_container_width=True)
+    with row1_right:
+        st.plotly_chart(px.pie(by_arch, names="arch", values="count", title="Share by archetype"), use_container_width=True)
+else:
+    with row1_left:
+        st.info("No archetype tags found in filtered data. Showing fallback visuals below.")
+
+# 2) Fallback visuals — always available if there are rows
+row2_left, row2_right = st.columns(2)
+if fdf["year"].notna().any():
+    by_year = fdf[fdf["year"].notna()].groupby("year").size().reset_index(name="count").sort_values("year")
+    row2_left.plotly_chart(px.bar(by_year, x="year", y="count", title="Strategies by year"), use_container_width=True)
+else:
+    row2_left.info("No numeric 'year' values to chart.")
+
+by_org = fdf.groupby("organisation").size().reset_index(name="count").sort_values("count", ascending=False).head(15)
+row2_right.plotly_chart(px.bar(by_org, x="organisation", y="count", title="Top organisations (by count)"), use_container_width=True)
 
 st.markdown("---")
 st.subheader("Explorer")
@@ -204,9 +208,9 @@ for _, r in fdf.sort_values("year", ascending=False).iterrows():
         meta[1].write(f"**Country:** {r['country']}")
         meta[2].write(f"**Scope:** {r['scope']}")
         meta[3].write(f"**Source:** {r['source']}")
-        archs = toks(r.get("archetypes",""))
+        archs = [a for a in toks(r.get("archetypes","")) if a]
         if archs:
-            st.write("**Archetypes:** " + ", ".join([f"{a} — {ARCH_HELP.get(a, '')}" for a in archs]))
+            st.write("**Archetypes:** " + ", ".join(archs))
         else:
             st.write("**Archetypes:** —")
         if r["link"]:
