@@ -1,6 +1,6 @@
 
 # ---------------------------------------------------
-# Public Sector Data Strategy Explorer — with Strategic Journey
+# Public Sector Data Strategy Explorer — No Presets + Lenses Explainer
 # ---------------------------------------------------
 import os, glob, time, json
 import pandas as pd
@@ -20,10 +20,10 @@ REQUIRED = [
     "link","summary","source","date_added"
 ]
 
-# ---------------- UI SETUP ----------------
 st.set_page_config(page_title="Public Sector Data Strategy Explorer", layout="wide")
 st.title("Public Sector Data Strategy Explorer")
-st.caption("Presets = target maturity/outcomes • Lenses = tensions to manage • Profile = your chosen balance.")
+st.caption("Lenses = tensions to manage • Profile = your chosen balance • Journey = current → target. (No presets for maximum clarity)")
+
 
 # ---------------- DATA LOAD ----------------
 csv_files = sorted([f for f in glob.glob("*.csv") if os.path.isfile(f)])
@@ -59,7 +59,8 @@ except Exception as e:
     st.error(f"⚠️ {e}")
     st.stop()
 
-# ---------------- MODEL DEFINITIONS ----------------
+
+# ---------------- MODEL ----------------
 AXES = [
     ("Abstraction Level", "Conceptual", "Logical / Physical"),
     ("Adaptability", "Living", "Fixed"),
@@ -74,86 +75,117 @@ AXES = [
 ]
 DIMENSIONS = [a[0] for a in AXES]
 
-PRESETS = {
-    "Foundational": {"Abstraction Level":100,"Adaptability":100,"Ambition":0,"Coverage":0,"Governance Structure":100,
-                     "Orientation":0,"Motivation":0,"Access Philosophy":100,"Delivery Mode":10,"Decision Model":30},
-    "Transformational": {"Abstraction Level":20,"Adaptability":10,"Ambition":100,"Coverage":60,"Governance Structure":20,
-                         "Orientation":80,"Motivation":100,"Access Philosophy":30,"Delivery Mode":70,"Decision Model":90},
-    "Collaborative": {"Abstraction Level":30,"Adaptability":20,"Ambition":50,"Coverage":20,"Governance Structure":10,
-                      "Orientation":60,"Motivation":60,"Access Philosophy":20,"Delivery Mode":30,"Decision Model":40},
-    "Insight-led": {"Abstraction Level":60,"Adaptability":40,"Ambition":60,"Coverage":40,"Governance Structure":50,
-                    "Orientation":70,"Motivation":60,"Access Philosophy":40,"Delivery Mode":40,"Decision Model":70},
-    "Citizen-focused": {"Abstraction Level":40,"Adaptability":40,"Ambition":50,"Coverage":40,"Governance Structure":30,
-                        "Orientation":100,"Motivation":40,"Access Philosophy":20,"Delivery Mode":40,"Decision Model":40}
-}
-
-PRESETS_RATIONALE = {
-    "Foundational": {
-        "title":"🧱 Foundational — “Build the plumbing”",
-        "bullets":[
-            "Logical/Physical, Fixed, Essential, Horizontal, Centralised",
-            "Tech-focused, Compliance-driven, Controlled, Incremental, Data-informed"
-        ]
-    },
-    "Transformational": {
-        "title":"🚀 Transformational — “Accelerate and innovate”",
-        "bullets":[
-            "Conceptual, Living, Transformational, Use-case-based, Federated",
-            "Value-focused, Innovation-driven, Democratised, Big Bang, Data-driven"
-        ]
-    },
-    "Collaborative": {
-        "title":"🤝 Collaborative — “Connect the ecosystem”",
-        "bullets":[
-            "Semi-conceptual, Living, Moderate, Horizontal, Federated",
-            "Value-focused, Balanced, Democratised, Incremental, Data-informed"
-        ]
-    },
-    "Insight-led": {
-        "title":"📊 Insight-led — “Evidence before action”",
-        "bullets":[
-            "Logical, Semi-living, Moderate, Targeted, Mixed",
-            "Value-focused, Balanced, Semi-open, Incremental, Data-driven"
-        ]
-    },
-    "Citizen-focused": {
-        "title":"👥 Citizen-focused — “Ethics, trust, service outcomes”",
-        "bullets":[
-            "Conceptual, Living, Balanced, Horizontal, Federated",
-            "Value-focused, Balanced, Democratised, Incremental, Data-informed"
-        ]
-    }
-}
-
-def render_explainer_block():
-    st.markdown("""
-### 🧭 How to Use This Framework
-- **Presets** describe the *destination* — the kind of data strategy your organisation is aiming for (e.g., Foundational, Transformational).
-- **Lenses** describe the *tensions to manage* — the competing forces that shape *how* you’ll get there.
-- **Profile** records your *current balance* across those tensions.
-
-Ask yourself:
-1. What type of data strategy are we trying to deliver? *(Preset)*  
-2. What tensions define our journey? *(Lenses)*  
-3. Where are we now, and how far are we from our target? *(Gap)*  
-4. Which tensions require conscious management? *(Priority for action)*
-""")
 
 def radar_trace(values01, dims, name, opacity=0.6, fill=True):
     r = list(values01) + [values01[0]]
     t = list(dims) + [dims[0]]
     return go.Scatterpolar(r=r, theta=t, name=name, fill='toself' if fill else None, opacity=opacity)
 
-def get_scores_from_session():
-    return {d: st.session_state.get("_ten_scores", {}).get(d, 50) for d in DIMENSIONS}
 
-def ensure_session_scores():
-    if "_ten_scores" not in st.session_state:
-        st.session_state["_ten_scores"] = {d:50 for d in DIMENSIONS}
+def ensure_sessions():
+    if "_current_scores" not in st.session_state:
+        st.session_state["_current_scores"] = {d:50 for d in DIMENSIONS}
+    if "_target_scores" not in st.session_state:
+        st.session_state["_target_scores"] = {d:50 for d in DIMENSIONS}
 
-tab_explore, tab_types, tab_journey, tab_about = st.tabs(["🔎 Explore", "👁️ Strategy Types", "🧭 Strategic Journey", "ℹ️ About"])
 
-# EXPLORE
+# ------------- LENSES EXPLAINER (rich, practical) ----------------
+LENSES_EXAMPLES = {
+    "Abstraction Level": {
+        "left": "Conceptual strategy clarifies principles, outcomes, and direction",
+        "right": "Logical/Physical specifies models, standards, platforms",
+        "when_left": "When you need sponsorship & shared intent across leaders",
+        "when_right": "When delivery is blocked by unclear ownership/architecture",
+        "example": "Start with a 1‑page narrative (conceptual) then publish a canonical data model (logical)."
+    },
+    "Adaptability": {
+        "left": "Living strategy that iterates with tech/policy change",
+        "right": "Fixed guardrails for consistency and auditability",
+        "when_left": "Fast‑changing domains (AI, climate risk, emergencies)",
+        "when_right": "Regulated or safety‑critical contexts",
+        "example": "Quarterly roadmap reviews with change log; stable retention policy."
+    },
+    "Ambition": {
+        "left": "Essential data management (quality, stewardship, metadata)",
+        "right": "Transformational use of AI/automation for services/outcomes",
+        "when_left": "Data quality debt, unclear lineage, poor trust",
+        "when_right": "Strong foundations and clear value hypotheses",
+        "example": "Fix reference data + metadata first → then pilot AI triage on service cases."
+    },
+    "Coverage": {
+        "left": "Horizontal capability across the organisation",
+        "right": "Use‑case exemplars to prove value quickly",
+        "when_left": "Silo fragmentation and inconsistent methods",
+        "when_right": "Need quick wins to unlock sponsorship",
+        "example": "Standards + training (horizontal) while delivering 2 flagship use‑cases."
+    },
+    "Governance Structure": {
+        "left": "Ecosystem/Federated with domain ownership",
+        "right": "Centralised for coherence and single point of accountability",
+        "when_left": "Diverse domains need autonomy within guardrails",
+        "when_right": "Crisis, reset, or heavy risk exposure",
+        "example": "Domain data owners + central guardrails, catalogue, and design authority."
+    },
+    "Orientation": {
+        "left": "Technology‑focused investments (platforms, pipelines, MDM)",
+        "right": "Value‑focused outcomes (policy, service, citizen impact)",
+        "when_left": "Missing core capabilities or tooling debt",
+        "when_right": "Stakeholders need measurable policy/service wins",
+        "example": "Prioritise ‘value slices’ that also uplift platform capability."
+    },
+    "Motivation": {
+        "left": "Compliance‑driven (legal, audit, risk)",
+        "right": "Innovation‑driven (opportunity, growth, modernisation)",
+        "when_left": "Regulatory deadlines or risk incidents",
+        "when_right": "Mature controls; pressure to improve outcomes",
+        "example": "DPIAs, privacy‑by‑design; then sandbox new ML approaches."
+    },
+    "Access Philosophy": {
+        "left": "Data‑democratised (open by default where safe)",
+        "right": "Controlled access (least privilege)",
+        "when_left": "To reduce shadow data and enable reuse",
+        "when_right": "Sensitive data and lawful basis constraints",
+        "example": "Tiered access: open → internal → restricted → highly sensitive."
+    },
+    "Delivery Mode": {
+        "left": "Incremental, iterative releases",
+        "right": "Big Bang step‑change programmes",
+        "when_left": "High uncertainty; need feedback loops",
+        "when_right": "Mandated deadlines or platform migration",
+        "example": "Monthly drops for catalogue improvements; time‑boxed migration cutover."
+    },
+    "Decision Model": {
+        "left": "Data‑informed (human‑in‑the‑loop)",
+        "right": "Data‑driven (automation where safe)",
+        "when_left": "Complex, value‑laden policy choices",
+        "when_right": "High‑volume, repeatable operational decisions",
+        "example": "Human policy panels for trade‑offs; automated fraud triage."
+    }
+}
+
+
+def render_lenses_explainer():
+    st.markdown("### 👁️ Lenses explainer & practical examples")
+    st.caption("Each slider represents a **tension to manage**. Use the notes below to decide which way to lean for your context.")
+    for dim, left, right in AXES:
+        ex = LENSES_EXAMPLES.get(dim, {})
+        with st.expander(f"{dim} — {left} ↔ {right}"):
+            st.markdown(f"- **{left}:** {ex.get('left','')}")
+            st.markdown(f"- **{right}:** {ex.get('right','')}")
+            st.markdown(f"- **Lean {left.lower()} when:** {ex.get('when_left','')}")
+            st.markdown(f"- **Lean {right.lower()} when:** {ex.get('when_right','')}")
+            st.markdown(f"- **Example:** {ex.get('example','')}")
+
+
+# ---------------- TABS ----------------
+tab_explore, tab_types, tab_journey, tab_about = st.tabs(
+    ["🔎 Explore", "👁️ Lenses (Set Profiles)", "🧭 Journey (Compare)", "ℹ️ About"]
+)
+
+
+# ====================================================
+# 🔎 EXPLORE
+# ====================================================
 with tab_explore:
     with st.sidebar:
         st.subheader("Filters")
@@ -190,14 +222,89 @@ with tab_explore:
 
     st.info(f"{len(fdf)} strategies shown")
     if not fdf.empty:
-        col1, col2 = st.columns(2)
-        by_year = fdf.groupby("year").size().reset_index(name="count").dropna()
-        if not by_year.empty:
-            col1.plotly_chart(px.bar(by_year, x="year", y="count", title="Strategies by year"), use_container_width=True)
+        # Quick KPIs
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("Strategies", len(fdf))
+        k2.metric("Countries", fdf["country"].nunique() if "country" in fdf.columns else 0)
+        k3.metric("Org types", fdf["org_type"].nunique() if "org_type" in fdf.columns else 0)
+        if "year" in fdf.columns and fdf["year"].notna().any():
+            k4.metric("Year span", f"{int(fdf['year'].min())}–{int(fdf['year'].max())}")
         else:
-            col1.info("No numeric 'year' values to chart.")
-        by_country = fdf.groupby("country").size().reset_index(name="count").sort_values("count", ascending=False)
-        col2.plotly_chart(px.bar(by_country.head(10), x="country", y="count", title="Top countries"), use_container_width=True)
+            k4.metric("Year span", "—")
+
+        st.markdown("---")
+
+        # Row 1
+        c1, c2 = st.columns(2)
+        if "year" in fdf.columns and fdf["year"].notna().any():
+            fig_hist = px.histogram(
+                fdf[fdf["year"].notna()], x="year",
+                color="scope" if "scope" in fdf.columns else None,
+                nbins=max(10, min(40, fdf["year"].nunique())),
+                title="Strategies by year"
+            )
+            fig_hist.update_layout(bargap=0.05)
+            c1.plotly_chart(fig_hist, use_container_width=True)
+        else:
+            c1.info("No numeric 'year' values to chart.")
+
+        if "org_type" in fdf.columns and fdf["org_type"].notna().any():
+            top_org = fdf.groupby("org_type").size().reset_index(name="count").sort_values("count", ascending=False)
+            fig_org = px.bar(top_org, x="org_type", y="count", title="Composition by organisation type")
+            fig_org.update_xaxes(title=None, tickangle=20)
+            c2.plotly_chart(fig_org, use_container_width=True)
+        else:
+            c2.info("No 'org_type' values to chart.")
+
+        st.markdown("---")
+
+        # Row 2
+        c3, c4 = st.columns(2)
+        if all(col in fdf.columns for col in ["country","org_type"]):
+            fig_tree = px.treemap(fdf.assign(_value=1), path=["country","org_type","organisation"], values="_value",
+                                  title="Landscape by country → org type → organisation")
+            c3.plotly_chart(fig_tree, use_container_width=True)
+        else:
+            c3.info("Need 'country' and 'org_type' for treemap.")
+
+        if "country" in fdf.columns and fdf["country"].notna().any():
+            by_ctry = fdf.groupby("country").size().reset_index(name="count")
+            fig_map = px.choropleth(by_ctry, locations="country", locationmode="country names", color="count",
+                                    title="Global distribution of strategies (by country)", color_continuous_scale="Blues")
+            c4.plotly_chart(fig_map, use_container_width=True)
+        else:
+            c4.info("No 'country' values to map.")
+
+        st.markdown("---")
+
+        # Row 3
+        c5, c6 = st.columns(2)
+        if all(col in fdf.columns for col in ["country","org_type"]):
+            top_ctrys = fdf.groupby("country").size().sort_values(ascending=False).head(12).index.tolist()
+            sub = fdf[fdf["country"].isin(top_ctrys)]
+            fig_stack = px.bar(sub, x="country", color="org_type", title="Top countries by strategies (stacked by org type)")
+            fig_stack.update_xaxes(title=None)
+            c5.plotly_chart(fig_stack, use_container_width=True)
+        else:
+            c5.info("Need 'country' and 'org_type' for stacked bar.")
+
+        need = ["year","organisation","title"]
+        if all(col in fdf.columns for col in need) and fdf["year"].notna().any():
+            sub = fdf[fdf["year"].notna()].copy()
+            fig_scatter = px.scatter(sub, x="year", y="organisation", color="country" if "country" in sub.columns else None,
+                                     hover_data=["title","country","scope"] if "scope" in sub.columns else ["title"],
+                                     title="Timeline of strategies by organisation")
+            c6.plotly_chart(fig_scatter, use_container_width=True)
+        else:
+            c6.info("Need 'year', 'organisation', 'title' for timeline scatter.")
+
+        st.markdown("---")
+
+        if "scope" in fdf.columns and fdf["scope"].notna().any():
+            by_scope = fdf["scope"].value_counts().reset_index()
+            by_scope.columns = ["scope","count"]
+            fig_scope = px.pie(by_scope, names="scope", values="count", title="Strategy scope breakdown")
+            st.plotly_chart(fig_scope, use_container_width=True)
 
         st.markdown("### Details")
         for _, r in fdf.iterrows():
@@ -211,109 +318,75 @@ with tab_explore:
                 if r["link"]:
                     st.link_button("Open document", r["link"])
 
-# STRATEGY TYPES
+
+# ====================================================
+# 👁️ LENSES (SET PROFILES)
+# ====================================================
 with tab_types:
-    st.subheader("👁️ The Ten Lenses of Data Strategy")
-    render_explainer_block()
+    st.subheader("👁️ Set your profiles across the Ten Lenses")
+    st.caption("0 = left label • 100 = right label. Use the left column for CURRENT, right for TARGET.")
 
-    st.markdown("### 🔗 Presets and what they mean")
-    for name, spec in PRESETS_RATIONALE.items():
-        with st.expander(spec["title"]):
-            for b in spec["bullets"]:
-                st.markdown(f"- {b}")
+    # Add the explainer right here
+    render_lenses_explainer()
 
-    ensure_session_scores()
-    left, right = st.columns([1,1])
-    with left:
-        st.markdown("#### Self‑assessment sliders")
+    ensure_sessions()
+    colL, colR = st.columns(2)
+
+    with colL:
+        st.markdown("#### Current profile")
         cols = st.columns(2)
         for i, (dim, left_lbl, right_lbl) in enumerate(AXES):
             with cols[i % 2]:
-                st.session_state["_ten_scores"][dim] = st.slider(
-                    f"{dim}", 0, 100, st.session_state["_ten_scores"][dim],
+                st.session_state["_current_scores"][dim] = st.slider(
+                    f"{dim} (current)", 0, 100, st.session_state["_current_scores"][dim],
                     format="%d%%", help=f"{left_lbl} ←→ {right_lbl}"
                 )
-                st.caption(f"{left_lbl} ←── {st.session_state['_ten_scores'][dim]}% → {right_lbl}")
+                st.caption(f"{left_lbl} ←── {st.session_state['_current_scores'][dim]}% → {right_lbl}")
+        st.download_button("Download current (JSON)",
+                           data=json.dumps(st.session_state["_current_scores"], indent=2).encode("utf-8"),
+                           file_name="current_profile.json", mime="application/json")
 
-    with right:
-        st.markdown("#### Preset overlays")
-        chosen = st.multiselect("Overlay presets", list(PRESETS.keys()), default=["Foundational","Transformational"])
-        apply_preset = st.selectbox("Apply preset to sliders", ["(none)"] + list(PRESETS.keys()))
-        if st.button("Apply preset now") and apply_preset != "(none)":
-            st.session_state["_ten_scores"] = PRESETS[apply_preset].copy()
+    with colR:
+        st.markdown("#### Target profile")
+        cols = st.columns(2)
+        for i, (dim, left_lbl, right_lbl) in enumerate(AXES):
+            with cols[i % 2]:
+                st.session_state["_target_scores"][dim] = st.slider(
+                    f"{dim} (target)", 0, 100, st.session_state["_target_scores"][dim],
+                    format="%d%%", help=f"{left_lbl} ←→ {right_lbl}"
+                )
+                st.caption(f"{left_lbl} ←── {st.session_state['_target_scores'][dim]}% → {right_lbl}")
+        st.download_button("Download target (JSON)",
+                           data=json.dumps(st.session_state["_target_scores"], indent=2).encode("utf-8"),
+                           file_name="target_profile.json", mime="application/json")
 
+    # Side-by-side radar
     dims = DIMENSIONS
+    cur01 = [st.session_state["_current_scores"][d]/100 for d in dims]
+    tgt01 = [st.session_state["_target_scores"][d]/100 for d in dims]
     fig = go.Figure()
-    user01 = [st.session_state["_ten_scores"][d]/100 for d in dims]
-    fig.add_trace(radar_trace(user01, dims, "Your profile", opacity=0.7))
-    for name in chosen:
-        p01 = [PRESETS[name][d]/100 for d in dims]
-        fig.add_trace(radar_trace(p01, dims, name, opacity=0.4))
-    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0,1])), title="Strategic fingerprint (you vs presets)")
+    fig.add_trace(radar_trace(cur01, dims, "Current", opacity=0.6))
+    fig.add_trace(radar_trace(tgt01, dims, "Target", opacity=0.5))
+    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0,1])), title="Current vs Target — strategic fingerprints")
     st.plotly_chart(fig, use_container_width=True)
 
-    st.download_button(
-        "Download my self‑assessment (JSON)",
-        data=json.dumps(st.session_state["_ten_scores"], indent=2).encode("utf-8"),
-        file_name="strategy_ten_lenses_self_assessment.json",
-        mime="application/json"
-    )
 
-# STRATEGIC JOURNEY
+# ====================================================
+# 🧭 JOURNEY (COMPARE)
+# ====================================================
 with tab_journey:
-    st.subheader("🧭 Strategic Journey — from current to target")
-    st.markdown("**Presets** = destination. **Lenses** = tensions to manage. Compare **current** vs **target** and see the gap.")
-
-    ensure_session_scores()
-    colA, colB, colC = st.columns([1.2, 1.2, 1])
-
-    with colA:
-        st.markdown("#### Current state")
-        current_source = st.radio("Use...", ["My sliders", "Preset", "Upload JSON"], horizontal=True)
-        if current_source == "My sliders":
-            current = get_scores_from_session()
-        elif current_source == "Preset":
-            c_name = st.selectbox("Current preset", list(PRESETS.keys()), index=0)
-            current = PRESETS[c_name]
-        else:
-            up = st.file_uploader("Upload JSON profile (keys = lenses, values 0–100)", type=["json"])
-            if up is not None:
-                try:
-                    current = json.loads(up.read().decode("utf-8"))
-                except Exception as e:
-                    st.error(f"Invalid JSON: {e}")
-                    current = get_scores_from_session()
-            else:
-                current = get_scores_from_session()
-
-    with colB:
-        st.markdown("#### Target state")
-        t_name = st.selectbox("Target preset", list(PRESETS.keys()), index=1)
-        target = PRESETS[t_name]
-
-    with colC:
-        st.markdown("#### Export")
-        st.download_button("Download current (JSON)",
-            data=json.dumps(current, indent=2).encode("utf-8"),
-            file_name="current_profile.json", mime="application/json")
-        st.download_button("Download target (JSON)",
-            data=json.dumps(target, indent=2).encode("utf-8"),
-            file_name="target_profile.json", mime="application/json")
+    st.subheader("🧭 Journey — compare current vs target and prioritise")
+    st.caption("Signed change: negative = move toward LEFT label; positive = move toward RIGHT label.")
 
     dims = DIMENSIONS
-    cur01 = [current[d]/100 for d in dims]
-    tgt01 = [target[d]/100 for d in dims]
-    fig2 = go.Figure()
-    fig2.add_trace(radar_trace(cur01, dims, "Current", opacity=0.6))
-    fig2.add_trace(radar_trace(tgt01, dims, "Target", opacity=0.5))
-    fig2.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0,1])), title=f"Current vs Target — {t_name}")
-    st.plotly_chart(fig2, use_container_width=True)
+    current = st.session_state.get("_current_scores", {d:50 for d in dims})
+    target = st.session_state.get("_target_scores", {d:50 for d in dims})
 
+    # Gap table
     gap_rows = []
-    for d in dims:
+    for d, left_lbl, right_lbl in AXES:
         diff = target[d] - current[d]
         mag = abs(diff)
-        left_lbl, right_lbl = [a[1] for a in AXES if a[0]==d][0], [a[2] for a in AXES if a[0]==d][0]
         direction = f"→ **{right_lbl}**" if diff>0 else (f"→ **{left_lbl}**" if diff<0 else "—")
         gap_rows.append({"Lens": d, "Current": current[d], "Target": target[d], "Change needed": diff, "Magnitude": mag, "Direction": direction})
     gap_df = pd.DataFrame(gap_rows).sort_values("Magnitude", ascending=False)
@@ -321,12 +394,11 @@ with tab_journey:
     st.markdown("#### Gap by lens (largest first)")
     st.dataframe(gap_df[["Lens","Current","Target","Change needed","Direction"]], use_container_width=True)
 
-    bar = px.bar(gap_df.sort_values("Change needed"),
-                 x="Change needed", y="Lens",
-                 orientation="h",
+    bar = px.bar(gap_df.sort_values("Change needed"), x="Change needed", y="Lens", orientation="h",
                  title="Signed change needed (− move left • + move right)")
     st.plotly_chart(bar, use_container_width=True)
 
+    # Top 3 priorities
     TOP_N = 3
     top = gap_df.head(TOP_N)
     if len(top):
@@ -339,28 +411,35 @@ with tab_journey:
                 bullets.append(f"- **{d}**: shift toward **{right_lbl}** (+{int(diff)} pts)")
             elif diff < 0:
                 bullets.append(f"- **{d}**: shift toward **{left_lbl}** ({int(diff)} pts)")
-        if bullets:
-            st.markdown("\n".join(bullets))
-        else:
-            st.info("You're already aligned with the target profile.")
+        st.markdown("\n".join(bullets))
+    else:
+        st.info("Current and target are identical — no change required.")
 
-# ABOUT
+
+# ====================================================
+# ℹ️ ABOUT
+# ====================================================
 with tab_about:
     st.subheader("About this Explorer")
     st.markdown("""
-This tool helps public bodies understand **how data strategies differ** — and how to move from **current** to **target**.
+This clarity-first version removes **presets** to avoid confusion.
 
-**Conceptual triad**
-- 🎯 **Presets** describe the *destination* (target maturity and outcomes).
-- ⚖️ **Lenses** surface the *tensions to manage* on the journey.
-- 📊 **Profile** records your chosen balance across the lenses.
+- ⚖️ **Lenses** = the tensions you must balance.  
+- 📊 **Current/Target profiles** = your positions on those tensions.  
+- 🧭 **Journey** = the gap and priority shifts to act on.
+
+Revisit regularly — your strategy should be **living**.
 """)
 
-    st.markdown("### 👁️ The Ten Lenses (visual overview)")
+    st.markdown("### 👁️ Lenses explainer & examples")
+    render_lenses_explainer()
+
+    # Visual overview of lenses
+    st.markdown("### Visual overview")
     fig = go.Figure()
     for i, (dim, left, right) in enumerate(AXES):
         fig.add_trace(go.Bar(x=[50, 50], y=[f"{i+1}. {dim}", f"{i+1}. {dim}"],
-                             orientation='h', marker_color=['#70A9FF', '#FFB8B8'],
+                             orientation='h', marker_color=['#70A9FF','#FFB8B8'],
                              showlegend=False, hovertext=[left, right]))
     fig.update_layout(barmode='stack', xaxis=dict(showticklabels=False, range=[0,100]),
                       height=480, margin=dict(l=20,r=20,t=20,b=20))
@@ -368,14 +447,14 @@ This tool helps public bodies understand **how data strategies differ** — and 
 
     st.markdown("""
 **The Ten Lenses**
-1. **Abstraction Level:** Conceptual ↔ Logical/Physical  
-2. **Adaptability:** Living ↔ Fixed  
-3. **Ambition:** Essential ↔ Transformational  
-4. **Coverage:** Horizontal ↔ Use‑case‑based  
-5. **Governance Structure:** Ecosystem/Federated ↔ Centralised  
-6. **Orientation:** Technology‑focused ↔ Value‑focused  
-7. **Motivation:** Compliance‑driven ↔ Innovation‑driven  
-8. **Access Philosophy:** Data‑democratised ↔ Controlled access  
-9. **Delivery Mode:** Incremental ↔ Big Bang  
-10. **Decision Model:** Data‑informed ↔ Data‑driven
+1. Abstraction Level — Conceptual ↔ Logical/Physical  
+2. Adaptability — Living ↔ Fixed  
+3. Ambition — Essential ↔ Transformational  
+4. Coverage — Horizontal ↔ Use‑case‑based  
+5. Governance Structure — Ecosystem/Federated ↔ Centralised  
+6. Orientation — Technology‑focused ↔ Value‑focused  
+7. Motivation — Compliance‑driven ↔ Innovation‑driven  
+8. Access Philosophy — Data‑democratised ↔ Controlled access  
+9. Delivery Mode — Incremental ↔ Big Bang  
+10. Decision Model — Data‑informed ↔ Data‑driven
 """)
