@@ -982,19 +982,21 @@ with tab_journey:
             bullets.append(line)
         st.markdown("\n".join(bullets), unsafe_allow_html=True)
 
-        # Seed actions table for Actions tab
+             # Seed actions table for Actions tab
         actions_rows = []
-        for i, row in enumerate(top.itertuples(), start=1):
-            d = row.Lens
-            diff = row.Change_needed
+        for i, (_, row) in enumerate(top.iterrows(), start=1):
+            d = row["Lens"]
+            diff = row["Change needed"]
             left_lbl = [a[1] for a in AXES if a[0] == d][0]
             right_lbl = [a[2] for a in AXES if a[0] == d][0]
+
             if diff > 0:
                 direction = f"toward {right_lbl}"
             elif diff < 0:
                 direction = f"toward {left_lbl}"
             else:
                 direction = "no change"
+
             actions_rows.append(
                 {
                     "Priority": i,
@@ -1006,7 +1008,9 @@ with tab_journey:
                     "Status": "",
                 }
             )
+
         st.session_state["_actions_df"] = pd.DataFrame(actions_rows)
+
     else:
         st.info(
             "Current and target are identical — no change required. "
