@@ -1299,7 +1299,7 @@ then uses the <strong>Ten Lenses</strong> to make trade-offs explicit.
     st.markdown(
         """
 | # | Lens | Lef ↔ Right | Description | Example |
-|---|------|-------------|----------------------|
+|---|------|-------------|----------------------|--------------------|
 | **1** | **Abstraction Level** | Conceptual ↔ Logical/Physical | **Conceptual** strategies define vision and principles; **Logical / Physical** specify architecture and governance. | A national “Data Vision 2030” is conceptual; a departmental “Data Architecture Strategy” is logical/physical. |
 | **2** | **Adaptability** | Living ↔ Fixed | **Living** evolves with new tech and policy; **Fixed** provides a stable framework. | The UK's AI white paper is living; GDPR is fixed. |
 | **3** | **Ambition** | Essential ↔ Transformational | **Essential** ensures foundations; **Transformational** drives innovation and automation. | DVLA data sharing are essential; Estonia’s X-Road is transformational. |
