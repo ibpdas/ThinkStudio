@@ -1256,7 +1256,7 @@ It makes key choices visible, compares where you are now with where you want to 
 - Chief data officers and heads of data  
 - Policy and operations leaders  
 - Analysts and data teams  
-- Programme and transformation offices
+- Programme managers 
 """)
 
     st.markdown("""
