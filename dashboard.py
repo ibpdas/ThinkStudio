@@ -245,13 +245,9 @@ MATURITY_SCALE = {
 
 
 def maturity_label(avg: float) -> str:
-    if avg < 2:
-        return "Foundational"
-    if avg < 3:
-        return "Developing"
-    if avg < 4:
-        return "Established"
-    return "Leading"
+    idx = int(round(avg))
+    idx = max(1, min(5, idx))
+    return MATURITY_SCALE[idx]
 
 
 def radar_trace(values01, dims, name, opacity=0.6, fill=True):
