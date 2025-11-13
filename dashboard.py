@@ -582,7 +582,7 @@ def render_explore_charts(fdf: pd.DataFrame):
 # ---------------- TABS ----------------
 ensure_sessions()
 tab_home, tab_explore, tab_lenses, tab_journey, tab_actions, tab_resources, tab_about = st.tabs(
-    ["Home", "Explore", "Lenses", "Journey", "Actions & Export", "Resources", "About"]
+    ["Home", "Explore", "Lenses", "Journey", "Actions", "Resources", "About"]
 )
 
 # ====================================================
