@@ -1276,7 +1276,7 @@ It combines a searchable dataset of real strategies with a conceptual framework 
 """
     )
 
-    st.markdown("### 🔍 Ten Lenses — explanation and examples")
+    st.markdown("### Ten Lenses — explanation and examples")
     st.markdown(
         """
 | # | Lens | Description | Example |
@@ -1298,7 +1298,7 @@ It combines a searchable dataset of real strategies with a conceptual framework 
 
     st.markdown(
         """
-### ❓ FAQs
+### FAQs
 
 **Is one side of a lens better?**  
 No — positions reflect context and risk appetite. The goal is **conscious balance**.
