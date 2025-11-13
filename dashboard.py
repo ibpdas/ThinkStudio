@@ -1267,10 +1267,6 @@ A holistic view of strategy across five elements:
 - Helps turn gap analysis in the **Journey** tab into a coherent story  
 - Links your **Delivery Mode** and **Governance Structure** choices to staging and vehicles  
 - Supports the **Actions & Export** tab by framing a joined-up change plan
-
-**When to use it**  
-- After identifying your top 3–5 lens shifts, to check whether the overall plan is coherent.  
-- When you need to explain to boards or ministers how different initiatives fit together.
 """
         )
 
@@ -1291,10 +1287,6 @@ A “kernel” of good strategy with three parts:
   - **Lenses (Current vs Target)** → guiding policy  
   - **Journey & Actions** → coherent actions  
 - Many conflict warnings highlight “bad strategy” patterns (for example, high ambition with low maturity)
-
-**When to use it**  
-- When conflict messages appear, or when the target profile is very ambitious.  
-- To stress-test whether you have a solid diagnosis before committing to bold change.
 """
         )
 
@@ -1313,10 +1305,6 @@ A way of pacing investment and change across three overlapping horizons:
 - Links to **Delivery Mode** (Incremental ↔ Big Bang) and **Ambition**  
 - Helps explain why some high-ambition targets should be phased over time  
 - Provides language to separate “fix the basics” from “invest in future data/AI capability”
-
-**When to use it**  
-- When leaders want to know what can be delivered now vs in 2–3 years.  
-- When planning a roadmap that balances foundational work with innovation pilots.
 """
         )
 
@@ -1338,10 +1326,6 @@ An industry standard view of data management disciplines such as:
 - Underpins the **six maturity themes** in the Lenses tab  
 - Helps unpack what “foundations” actually mean in practice  
 - Useful when discussing roles and responsibilities with data management teams
-
-**When to use it**  
-- When there is disagreement about what “good data foundations” include.  
-- When you need a common language between architects, governance, and delivery teams.
 """
         )
 
@@ -1360,10 +1344,6 @@ A simple stack that distinguishes three levels of architectural thinking:
 - Connects directly to the **Abstraction Level** lens (Conceptual ↔ Logical/Physical)  
 - Explains why some strategies stay at vision level while others describe detailed platforms  
 - Helps align enterprise architects with policy and strategy owners
-
-**When to use it**  
-- When debating how detailed the data strategy should be, and who the primary audience is.  
-- When translating strategic tensions into design and platform choices.
 """
         )
 
