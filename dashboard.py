@@ -208,20 +208,40 @@ AXES = [
 DIMENSIONS = [a[0] for a in AXES]
 
 MATURITY_THEMES = [
-    ("Data Management", "Standards, quality, metadata, stewardship"),
-    ("Data Skills", "Literacy and capability across roles"),
-    ("Tools & Technology", "Platforms, pipelines, interoperability"),
-    ("Data Governance", "Ownership, accountability, ethics"),
-    ("Culture & Leadership", "Behaviours, incentives, openness"),
-    ("Use & Value", "Applying data to services/policy outcomes"),
+    (
+        "Uses",
+        "How you get value out of data. Making decisions, evidencing impact, improving services.",
+    ),
+    (
+        "Data",
+        "Technical aspects of managing data as an asset: collection, quality, cataloguing, interoperability.",
+    ),
+    (
+        "Leadership",
+        "How senior and business leaders engage with data: strategy, responsibility, oversight, investment.",
+    ),
+    (
+        "Culture",
+        "Attitudes to data across the organisation: awareness, openness, security, responsibility.",
+    ),
+    (
+        "Tools",
+        "The systems and tools you use to store, share and work with data.",
+    ),
+    (
+        "Skills",
+        "Data and analytical literacy across the organisation, including how people build and maintain those skills.",
+    ),
 ]
+
 MATURITY_SCALE = {
-    1: "Early",
+    1: "Beginning",
     2: "Emerging",
-    3: "Established",
-    4: "Advanced",
-    5: "Optimised",
+    3: "Learning",
+    4: "Developing",
+    5: "Mastering",
 }
+
 
 
 def maturity_label(avg: float) -> str:
@@ -779,6 +799,16 @@ with tab_lenses:
 
     # ------- Section 1: Maturity -------
     st.markdown("### 1) Understand maturity (self-diagnose)")
+
+    st.caption(
+    "Based on the six themes from the Data Maturity Assessment for Government framework."
+)
+st.markdown(
+    "[Open the framework in a new tab]"
+    "(https://www.gov.uk/government/publications/data-maturity-assessment-for-government-framework/"
+    "data-maturity-assessment-for-government-framework-html)"
+)
+
     cols_theme = st.columns(3)
     for i, (name, desc) in enumerate(MATURITY_THEMES):
         with cols_theme[i % 3]:
