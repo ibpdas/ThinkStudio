@@ -648,7 +648,7 @@ action log with owners, timelines and metrics.
     k2.metric("Countries", df["country"].nunique() if "country" in df.columns else 0)
     k3.metric("Org types", df["org_type"].nunique() if "org_type" in df.columns else 0)
     k4.metric(
-        "Last updated", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        "Last updated", time.strftime("%Y-%m-%d", time.localtime())
     )
 
 # ====================================================
@@ -789,40 +789,50 @@ with tab_explore:
 # ====================================================
 # 👁️ LENSES (Maturity → Tensions)
 # ====================================================
+
 with tab_lenses:
     ensure_sessions()
     st.subheader("Lenses")
+
     st.caption(
-        "First self-diagnose your organisation’s data maturity. "
-        "Then define where your strategy should sit on key tensions."
+        "First self-diagnose your organisation’s data maturity using the six themes from the "
+        "Data Maturity Assessment for Government, then define where your strategy should sit "
+        "on key tensions."
     )
 
     # ------- Section 1: Maturity -------
     st.markdown("### 1) Understand maturity (self-diagnose)")
 
     st.caption(
-    "Based on the six themes from the Data Maturity Assessment for Government framework."
-)
-st.markdown(
-    "[Open the framework in a new tab]"
-    "(https://www.gov.uk/government/publications/data-maturity-assessment-for-government-framework/"
-    "data-maturity-assessment-for-government-framework-html)"
-)
+        "Based on the six themes in the Data Maturity Assessment for Government framework "
+        "(Central Digital and Data Office)."
+    )
+    st.markdown(
+        "[Open the framework in a new tab]"
+        "(https://www.gov.uk/government/publications/data-maturity-assessment-for-government-framework/"
+        "data-maturity-assessment-for-government-framework-html)"
+    )
+
+    # Maturity sliders
     cols_theme = st.columns(3)
     for i, (name, desc) in enumerate(MATURITY_THEMES):
         with cols_theme[i % 3]:
+            # default to 3 if not yet set
+            current_val = st.session_state["_maturity_scores"].get(name, 3)
             st.session_state["_maturity_scores"][name] = st.slider(
                 name,
-                1,
-                5,
-                st.session_state["_maturity_scores"][name],
+                min_value=1,
+                max_value=5,
+                value=current_val,
                 help=desc,
                 format="%d",
+                key=f"mat_{name}",
             )
             st.caption(
                 f"Level: {MATURITY_SCALE[st.session_state['_maturity_scores'][name]]}"
             )
 
+    # Overall maturity summary + radar
     m_scores = st.session_state["_maturity_scores"]
     m_avg = sum(m_scores.values()) / len(m_scores) if m_scores else 0
     m_stage = maturity_label(m_avg)
@@ -831,12 +841,18 @@ st.markdown(
     with colA:
         st.metric("Overall maturity", f"{m_avg:.1f} / 5")
         st.markdown(
-            f"<span class='badge'>Stage: {m_stage}</span>", unsafe_allow_html=True
+            f"<span class='badge'>Stage: {m_stage}</span>",
+            unsafe_allow_html=True,
         )
         st.markdown(
-            "Use a short workshop with policy, ops and data leads to "
-            "agree these scores, then revisit over time."
+            "Use a short workshop with policy, operations and data leads to agree these scores, "
+            "capture any disagreements, and revisit over time."
         )
+        st.markdown(
+            "_Levels follow the government framework naming: **Beginning, Emerging, "
+            "Learning, Developing, Mastering**._"
+        )
+
     with colB:
         dims_m = list(m_scores.keys())
         vals01 = [m_scores[d] / 5 for d in dims_m]
@@ -853,9 +869,11 @@ st.markdown(
     # ------- Section 2: Tensions -------
     st.markdown("### 2) Determine strategic tensions (current vs target)")
     st.caption(
-        "0 = left label • 100 = right label. Hints and warnings adapt to your maturity."
+        "For each lens, 0 = left label and 100 = right label. "
+        "Hints and warnings adapt to your maturity profile."
     )
 
+    # Current profile
     colL, colR = st.columns(2)
 
     with colL:
@@ -863,51 +881,59 @@ st.markdown(
         cols = st.columns(2)
         for i, (dim, left_lbl, right_lbl) in enumerate(AXES):
             with cols[i % 2]:
+                current_val = st.session_state["_current_scores"].get(dim, 50)
                 st.session_state["_current_scores"][dim] = st.slider(
                     f"{dim} (current)",
-                    0,
-                    100,
-                    st.session_state["_current_scores"][dim],
+                    min_value=0,
+                    max_value=100,
+                    value=current_val,
                     format="%d%%",
                     help=f"{left_lbl} ←→ {right_lbl}",
+                    key=f"cur_{dim}",
                 )
                 st.caption(
                     f"{left_lbl} ←── {st.session_state['_current_scores'][dim]}% → {right_lbl}"
                 )
 
+    # Target profile + hints/conflicts
     with colR:
         st.markdown("#### Target")
         cols = st.columns(2)
         for i, (dim, left_lbl, right_lbl) in enumerate(AXES):
             with cols[i % 2]:
+                target_val = st.session_state["_target_scores"].get(dim, 50)
                 st.session_state["_target_scores"][dim] = st.slider(
                     f"{dim} (target)",
-                    0,
-                    100,
-                    st.session_state["_target_scores"][dim],
+                    min_value=0,
+                    max_value=100,
+                    value=target_val,
                     format="%d%%",
                     help=f"{left_lbl} ←→ {right_lbl}",
+                    key=f"tgt_{dim}",
                 )
                 st.caption(
                     f"{left_lbl} ←── {st.session_state['_target_scores'][dim]}% → {right_lbl}"
                 )
-                # hint
+
+                # Contextual hint based on maturity
                 hint = hint_for_lens(dim, m_avg, m_stage)
                 if hint:
                     st.markdown(
                         f"<div class='info-panel'><strong>Hint:</strong> {hint}</div>",
                         unsafe_allow_html=True,
                     )
-                # conflict
+
+                # Conflict warning if target + maturity look misaligned
                 warn = conflict_for_target(
                     dim, st.session_state["_target_scores"][dim], m_avg
                 )
                 if warn:
                     st.markdown(
-                        f"<div class='warn'>⚠️ {warn}</div>", unsafe_allow_html=True
+                        f"<div class='warn'>⚠️ {warn}</div>",
+                        unsafe_allow_html=True,
                     )
 
-    # twin radar
+    # Twin radar: current vs target
     dims = [a[0] for a in AXES]
     cur01 = [st.session_state["_current_scores"][d] / 100 for d in dims]
     tgt01 = [st.session_state["_target_scores"][d] / 100 for d in dims]
@@ -919,6 +945,7 @@ st.markdown(
         title="Current vs Target — strategic fingerprints",
     )
     st.plotly_chart(fig, use_container_width=True)
+
 
 # ====================================================
 # 🧭 JOURNEY
@@ -1051,10 +1078,10 @@ with tab_journey:
     )
 
 # ====================================================
-# ✅ ACTIONS & EXPORT
+# ✅ ACTIONS 
 # ====================================================
 with tab_actions:
-    st.subheader("Actions & Export")
+    st.subheader("Actions")
     st.caption(
         "Turn your top priority shifts into an action log. "
         "Assign owners, timelines and metrics, then export to CSV."
