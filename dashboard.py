@@ -6,7 +6,6 @@ import glob
 import io
 import time
 import hashlib
-import base64
 
 import numpy as np
 import pandas as pd
@@ -18,7 +17,6 @@ import streamlit as st
 # --- Optional: semantic embeddings (AI search) ---
 try:
     from sentence_transformers import SentenceTransformer
-
     HAS_EMBED = True
 except Exception:
     HAS_EMBED = False
@@ -103,7 +101,7 @@ a:hover {{ color:#003078; }}
 </style>
 <div class="header-bar">
   <h1>Public Sector Data Strategy Explorer</h1>
-  <div class="sub">Real data strategy + Fast impact.</div>
+  <div class="sub">Design better data strategies, faster — balance tensions, align leadership, and plan change.</div>
 </div>
 """,
     unsafe_allow_html=True,
@@ -164,6 +162,16 @@ def load_data_from_path(path: str, file_hash: str, app_version: str):
     return df
 
 
+@st.cache_data(show_spinner=False)
+def load_data_from_bytes(content: bytes, file_hash: str, app_version: str):
+    df = pd.read_csv(io.BytesIO(content)).fillna("")
+    missing = [c for c in REQUIRED if c not in df.columns]
+    if missing:
+        raise ValueError(f"Missing columns: {missing}")
+    df["year"] = pd.to_numeric(df["year"], errors="coerce")
+    return df
+
+
 # --- Load initial CSV (default or uploaded) ---
 csv_files = sorted([f for f in glob.glob("*.csv") if os.path.isfile(f)])
 default_csv = (
@@ -184,30 +192,12 @@ else:
 
 # Government data maturity themes (CDDO)
 MATURITY_THEMES = [
-    (
-        "Uses",
-        "How you get value out of data. Making decisions, evidencing impact, improving services.",
-    ),
-    (
-        "Data",
-        "Technical aspects of managing data as an asset: collection, quality, cataloguing, interoperability.",
-    ),
-    (
-        "Leadership",
-        "How senior and business leaders engage with data: strategy, responsibility, oversight, investment.",
-    ),
-    (
-        "Culture",
-        "Attitudes to data across the organisation: awareness, openness, security, responsibility.",
-    ),
-    (
-        "Tools",
-        "The systems and tools you use to store, share and work with data.",
-    ),
-    (
-        "Skills",
-        "Data and analytical literacy across the organisation, including how people build and maintain those skills.",
-    ),
+    ("Uses", "How you get value out of data. Making decisions, evidencing impact, improving services."),
+    ("Data", "Technical aspects of managing data as an asset: collection, quality, cataloguing, interoperability."),
+    ("Leadership", "How senior and business leaders engage with data: strategy, responsibility, oversight, investment."),
+    ("Culture", "Attitudes to data across the organisation: awareness, openness, security, responsibility."),
+    ("Tools", "The systems and tools you use to store, share and work with data."),
+    ("Skills", "Data and analytical literacy across the organisation, including how people build and maintain those skills."),
 ]
 
 # Official government levels 1–5
@@ -221,9 +211,6 @@ MATURITY_SCALE = {
 
 
 def maturity_label(avg: float) -> str:
-    """
-    Map the average (1–5) to the nearest official maturity level.
-    """
     idx = int(round(avg))
     idx = max(1, min(5, idx))
     return MATURITY_SCALE[idx]
@@ -249,7 +236,11 @@ def radar_trace(values01, dims, name, opacity=0.6, fill=True):
     r = list(values01) + [values01[0]]
     t = list(dims) + [dims[0]]
     return go.Scatterpolar(
-        r=r, theta=t, name=name, fill="toself" if fill else None, opacity=opacity
+        r=r,
+        theta=t,
+        name=name,
+        fill="toself" if fill else None,
+        opacity=opacity,
     )
 
 
@@ -265,12 +256,8 @@ def ensure_sessions():
             columns=["Priority", "Lens", "Direction", "Owner", "Timeline", "Metric", "Status"]
         )
 
-
 # ---------------- SEARCH HELPERS ----------------
 def simple_search(df_in: pd.DataFrame, query: str) -> pd.DataFrame:
-    """
-    Simple case-insensitive search over key text columns.
-    """
     if not query:
         return df_in
 
@@ -320,10 +307,6 @@ def compute_strategy_embeddings(df_in: pd.DataFrame, app_version: str):
 
 
 def semantic_search(fdf: pd.DataFrame, emb_df: pd.DataFrame, query: str, top_k: int = 100) -> pd.DataFrame:
-    """
-    Semantic search using pre-computed embeddings.
-    Respects current filtered subset fdf by aligning on index.
-    """
     if not query or emb_df is None or fdf.empty:
         return fdf
 
@@ -343,13 +326,8 @@ def semantic_search(fdf: pd.DataFrame, emb_df: pd.DataFrame, query: str, top_k: 
 
 
 emb_df = compute_strategy_embeddings(df, APP_VERSION)
-
 # ---------------- HINTS & CONFLICTS ----------------
 def hint_for_lens(lens_name, maturity_avg, maturity_level_name=None):
-    """
-    Give contextual hints based on the organisation's overall maturity level.
-    Uses government levels: Beginning, Emerging, Learning, Developing, Mastering.
-    """
     level = maturity_level_name or maturity_label(maturity_avg)
     low = level in ("Beginning", "Emerging")
     mid = level in ("Learning", "Developing")
@@ -430,15 +408,10 @@ def hint_for_lens(lens_name, maturity_avg, maturity_level_name=None):
 
 
 def conflict_for_target(lens_name, target_score, maturity_avg):
-    """
-    Flag misalignments between maturity and ambitious targets.
-    target_score is 0–100 toward right label.
-    """
     level = maturity_label(maturity_avg)
     low = level in ("Beginning", "Emerging")
-    highish = level in ("Developing", "Mastering")  # treat Learning as middle
+    highish = level in ("Developing", "Mastering")
 
-    # Low maturity: warn if target is very ambitious/risky
     if low:
         if lens_name == "Delivery Mode" and target_score >= 70:
             return "Big-bang at Beginning/Emerging maturity is high risk — consider phased delivery."
@@ -451,7 +424,6 @@ def conflict_for_target(lens_name, target_score, maturity_avg):
         if lens_name == "Motivation" and target_score >= 70:
             return "Innovation-first without guardrails can raise risk — keep compliance in the loop."
 
-    # High-ish maturity: warn if overly conservative
     if highish:
         if lens_name == "Delivery Mode" and target_score <= 30:
             return "At Developing/Mastering, being too incremental may under-deliver benefits."
@@ -596,9 +568,6 @@ ensure_sessions()
 tab_home, tab_explore, tab_lenses, tab_journey, tab_actions, tab_resources, tab_about = st.tabs(
     ["Home", "Explore", "Lenses", "Journey", "Actions & Export", "Resources", "About"]
 )
-
-# ...other tab content...
-
 
 # ====================================================
 # 🏠 HOME
@@ -856,14 +825,12 @@ with tab_lenses:
             level_name = MATURITY_SCALE[st.session_state["_maturity_scores"][name]]
             st.caption(f"Level: {level_name}")
 
-    # Overall maturity summary + gauge bar + radar
     m_scores = st.session_state["_maturity_scores"]
     m_avg = sum(m_scores.values()) / len(m_scores) if m_scores else 0
     current_level_name = maturity_label(m_avg)
 
     colA, colB = st.columns([1, 1])
 
-    # LEFT: Gauge-style bar (0–5)
     with colA:
         st.metric("Overall maturity (average)", f"{m_avg:.1f} / 5")
         st.markdown(
@@ -895,7 +862,6 @@ with tab_lenses:
             "_Bar shows your current average position on the government maturity framework._"
         )
 
-    # RIGHT: Radar (themes profile, 1–5 scale)
     with colB:
         dims_m = list(m_scores.keys())
         vals01 = [m_scores[d] / 5 for d in dims_m]
@@ -959,7 +925,6 @@ with tab_lenses:
 
     colL, colR = st.columns(2)
 
-    # Current profile
     with colL:
         st.markdown("#### Current")
         cols = st.columns(2)
@@ -979,7 +944,6 @@ with tab_lenses:
                     f"{left_lbl} ←── {st.session_state['_current_scores'][dim]}% → {right_lbl}"
                 )
 
-    # Target profile + hints/conflicts
     with colR:
         st.markdown("#### Target")
         cols = st.columns(2)
@@ -1015,7 +979,6 @@ with tab_lenses:
                         unsafe_allow_html=True,
                     )
 
-    # Twin radar: current vs target
     dims = [a[0] for a in AXES]
     cur01 = [st.session_state["_current_scores"][d] / 100 for d in dims]
     tgt01 = [st.session_state["_target_scores"][d] / 100 for d in dims]
@@ -1027,7 +990,6 @@ with tab_lenses:
         title="Current vs Target — strategic fingerprints",
     )
     st.plotly_chart(fig, use_container_width=True)
-
 # ====================================================
 # 🧭 JOURNEY
 # ====================================================
@@ -1072,7 +1034,6 @@ with tab_journey:
         ["Conflict", "Magnitude"], ascending=[False, False]
     )
 
-    # Narrative summary
     moves_left = sum(1 for v in gap_df["Change needed"] if v < 0)
     moves_right = sum(1 for v in gap_df["Change needed"] if v > 0)
     zero_moves = sum(1 for v in gap_df["Change needed"] if v == 0)
@@ -1089,7 +1050,6 @@ with tab_journey:
         use_container_width=True,
     )
 
-    # bar chart with colour by conflict
     color_series = gap_df["Conflict"].map({True: RED, False: PRIMARY})
     bar = px.bar(
         gap_df.sort_values("Change needed"),
@@ -1101,7 +1061,6 @@ with tab_journey:
     bar.data[0].marker.color = color_series
     st.plotly_chart(bar, use_container_width=True)
 
-    # Priority list
     TOP_N = 3
     top = gap_df.head(TOP_N)
     if len(top):
@@ -1124,7 +1083,6 @@ with tab_journey:
             bullets.append(line)
         st.markdown("\n".join(bullets), unsafe_allow_html=True)
 
-        # Seed actions table for Actions tab
         actions_rows = []
         for i, (_, row) in enumerate(top.iterrows(), start=1):
             d = row["Lens"]
@@ -1156,7 +1114,7 @@ with tab_journey:
         )
 
     st.markdown(
-        "_You can paste maturity snapshots, lens profiles and action logs from this explorer into your slide decks or business cases._"
+        "_Want to go deeper on coherence or pacing? See the **Strategy Kernel** and **Three Horizons** in the Resources tab._"
     )
 
 # ====================================================
@@ -1203,37 +1161,18 @@ with tab_actions:
 # 📚 RESOURCES
 # ====================================================
 with tab_resources:
-    st.subheader("Resources — strategy & data frameworks")
-
+    st.subheader("Resources and strategy frameworks")
     st.markdown(
         """
-Use these frameworks to deepen the conversation around your data strategy:
+This tab lists frameworks and references you can use alongside the explorer.
 
-- **Playing to Win (Lafley & Martin)**  
-  *Where will you play? How will you win?* Use this to sharpen the **strategic choices** that your data work supports.
-
-- **Strategy Kernel (Diagnosis → Guiding Policy → Coherent Actions)**  
-  Map your **maturity diagnosis** and **lens choices** into a guiding policy and 5–10 coherent actions.
-
-- **Three Horizons Framework**  
-  Align actions over time:  
-  - Horizon 1: Fix foundations and quick wins  
-  - Horizon 2: Build new capabilities  
-  - Horizon 3: Transform services and models
-
-- **Data Management Body of Knowledge (DAMA-DMBOK)**  
-  Cross-check that your strategy covers key disciplines: data quality, governance, architecture, security, metadata, etc.
-
-- **Government Data Maturity Assessment (CDDO)**  
-  The six themes you’ve used in this tool. Use the official framework for a deeper organisation-wide conversation.
-
-- **Outcome & Value Frameworks (e.g. logic models, theory of change)**  
-  Link data initiatives to **policy outcomes**, not just technology deliverables.
+- **Playing to Win** (strategy choices and where-to-play / how-to-win logic)  
+- **Strategy Diamond** (arenas, vehicles, differentiators, staging, economic logic)  
+- **Data Management Body of Knowledge (DAMA)** – data management functions and disciplines  
+- **Government Data Maturity Assessment** – official framework for Uses, Data, Leadership, Culture, Tools, Skills  
+- **Three Horizons** – pacing of change and balancing today vs tomorrow  
+- **Strategy Kernel** – problem, guiding policy, coherent actions  
 """
-    )
-
-    st.markdown(
-        "_Public sector resources to be added_"
     )
 
 # ====================================================
@@ -1245,7 +1184,8 @@ with tab_about:
     st.markdown("""
 This explorer helps public bodies plan and manage their data strategy.
 
-It started as a personal learning and development project to make sense of different public sector data strategies, and has grown into a practical tool you can use in workshops and planning sessions.
+It was created by a data strategist as a side project, originally to make sense of different public sector data strategies.  
+Over time it has grown into a practical tool that supports workshops, discovery work and strategic planning.
 
 It makes key choices visible, compares where you are now with where you want to be, and turns gaps into a small set of actions you can track.
 """)
@@ -1256,7 +1196,7 @@ It makes key choices visible, compares where you are now with where you want to 
 - Chief data officers and heads of data  
 - Policy and operations leaders  
 - Analysts and data teams  
-- Programme managers 
+- Programme and transformation offices
 """)
 
     st.markdown("""
@@ -1264,10 +1204,10 @@ It makes key choices visible, compares where you are now with where you want to 
 
 You can use the explorer to:
 
-- see how other organisations describe their data strategies  
+- review how other organisations describe their data strategies  
 - assess your data maturity against six government data themes  
-- position your strategy on ten lenses (for example, ambition, governance, delivery mode)  
-- compare current and target positions and see where the biggest gaps are  
+- position your strategy on ten lenses (for example ambition, governance, delivery mode)  
+- compare current and target positions and identify the largest gaps  
 - create a short action log with owners, timelines and measures
 """)
 
@@ -1281,7 +1221,7 @@ The ten lenses describe the main choices organisations make in their data strate
 | Abstraction level | Whether the strategy focuses on vision and principles, or detailed architecture and governance. |
 | Adaptability | Whether the strategy is reviewed regularly, or kept largely fixed. |
 | Ambition | Whether the focus is on foundations, or more transformational change. |
-| Coverage | Whether the strategy is horisontal across the organisation, or focused on specific use cases. |
+| Coverage | Whether the strategy is horizontal across the organisation, or focused on specific use cases. |
 | Governance structure | Whether governance is federated across domains, or centralised. |
 | Orientation | Whether the emphasis is on platforms and tools, or on outcomes and value. |
 | Motivation | Whether work is mainly driven by compliance, or by innovation and opportunity. |
@@ -1307,12 +1247,9 @@ This prototype is for learning and exploration. It is not an official government
 """)
 
 # ---------------- Footer ----------------
-st.markdown(
-    """
+st.markdown("""
 ---
 <div class="footer">
-This prototype is created for learning and exploration by Bandhu P. Das
+This prototype is created for learning and exploration. It is not an official service.
 </div>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
