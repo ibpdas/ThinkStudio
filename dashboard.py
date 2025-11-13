@@ -1158,20 +1158,256 @@ with tab_actions:
         )
 
 # ====================================================
-# 📚 RESOURCES
+# 📘 RESOURCES — Skills mapped to Civil Service Behaviours
 # ====================================================
 with tab_resources:
-    st.subheader("Resources and strategy frameworks")
+    st.subheader("Resources")
+
+    st.markdown("## 🧠 Data Strategy Skills Mapped to Civil Service Behaviours")
+    st.caption(
+        "Use this self-assessment to understand how your data strategy craft maps onto G6/G7 Civil Service expectations."
+    )
+
     st.markdown(
         """
-This tab lists frameworks and references you can use alongside the explorer.
+This view has **two layers**:
 
-- **Playing to Win** (strategy choices and where-to-play / how-to-win logic)  
-- **Strategy Diamond** (arenas, vehicles, differentiators, staging, economic logic)  
-- **Data Management Body of Knowledge (DAMA)** – data management functions and disciplines  
-- **Government Data Maturity Assessment** – official framework for Uses, Data, Leadership, Culture, Tools, Skills  
-- **Three Horizons** – pacing of change and balancing today vs tomorrow  
-- **Strategy Kernel** – problem, guiding policy, coherent actions  
+- **Data strategy skills** – what you actually *do* as a practitioner.
+- **Civil Service Behaviours** – how those skills *show up* in a public-sector leadership role.
+
+You rate the **skills**.  
+The app aggregates them to show your strength and stretch across **behaviours**.
+"""
+    )
+
+    # ------------------------------
+    # Data strategy skills (rows you rate)
+    # ------------------------------
+    STRATEGY_SKILLS = [
+        "Problem Framing",
+        "Systems Thinking",
+        "Insight & Sense-making",
+        "Communication & Narrative",
+        "Facilitation & Alignment",
+        "Experimentation & Learning",
+        "Influence & Stakeholder Management",
+        "Strategy Craft",
+        "Data Skills",
+    ]
+
+    # ------------------------------
+    # CS Behaviours (G6/G7)
+    # ------------------------------
+    CS_BEHAVIOURS = [
+        "Seeing the Big Picture",
+        "Making Effective Decisions",
+        "Communicating and Influencing",
+        "Working Together",
+        "Changing and Improving",
+        "Delivering at Pace",
+        "Leadership",
+    ]
+
+    # ------------------------------
+    # Mapping: which skills underpin which behaviours
+    # (you can tweak this later if you disagree with any mapping)
+    # ------------------------------
+    BEHAVIOUR_SKILL_MAP = {
+        "Seeing the Big Picture": [
+            "Problem Framing",
+            "Systems Thinking",
+            "Insight & Sense-making",
+        ],
+        "Making Effective Decisions": [
+            "Problem Framing",
+            "Insight & Sense-making",
+            "Data Skills",
+        ],
+        "Communicating and Influencing": [
+            "Communication & Narrative",
+            "Influence & Stakeholder Management",
+        ],
+        "Working Together": [
+            "Facilitation & Alignment",
+            "Influence & Stakeholder Management",
+        ],
+        "Changing and Improving": [
+            "Experimentation & Learning",
+            "Systems Thinking",
+        ],
+        "Delivering at Pace": [
+            "Strategy Craft",
+            "Experimentation & Learning",
+        ],
+        "Leadership": [
+            "Strategy Craft",
+            "Communication & Narrative",
+            "Facilitation & Alignment",
+        ],
+    }
+
+    SKILL_HELP = {
+        "Problem Framing": "Turning messy problems into clear, answerable questions and options.",
+        "Systems Thinking": "Seeing interdependencies across policy, operations, tech, users and data.",
+        "Insight & Sense-making": "Drawing meaning out of evidence, noise and conflicting signals.",
+        "Communication & Narrative": "Explaining strategy, trade-offs and data stories in plain language.",
+        "Facilitation & Alignment": "Helping diverse stakeholders reach shared understanding and commitment.",
+        "Experimentation & Learning": "Running pilots, tests and iterations; using feedback to adapt.",
+        "Influence & Stakeholder Management": "Building relationships, shaping decisions, managing politics.",
+        "Strategy Craft": "Defining direction, priorities, roadmaps and success measures.",
+        "Data Skills": "Understanding data quality, standards, analytics and AI well enough to lead and challenge.",
+    }
+
+    # ------------------------------
+    # Initialise session state
+    # ------------------------------
+    if "skill_current" not in st.session_state:
+        st.session_state["skill_current"] = {s: 2 for s in STRATEGY_SKILLS}
+    if "skill_target" not in st.session_state:
+        st.session_state["skill_target"] = {s: 4 for s in STRATEGY_SKILLS}
+
+    st.markdown("### 1️⃣ Rate your Data Strategy Skills")
+    st.caption("Scale: 1 = Learning • 2 = Practising • 3 = Advancing • 4 = Leading • 5 = Expert")
+
+    col_cur, col_tgt = st.columns(2)
+
+    with col_cur:
+        st.markdown("#### Current level")
+        for s in STRATEGY_SKILLS:
+            st.session_state["skill_current"][s] = st.slider(
+                s + " (current)",
+                min_value=1,
+                max_value=5,
+                value=st.session_state["skill_current"][s],
+                help=SKILL_HELP.get(s, ""),
+                key=f"cur_skill_{s}",
+            )
+
+    with col_tgt:
+        st.markdown("#### Target level")
+        for s in STRATEGY_SKILLS:
+            st.session_state["skill_target"][s] = st.slider(
+                s + " (target)",
+                min_value=1,
+                max_value=5,
+                value=st.session_state["skill_target"][s],
+                help=SKILL_HELP.get(s, ""),
+                key=f"tgt_skill_{s}",
+            )
+
+    # ------------------------------
+    # Compute behaviour scores from underlying skills
+    # ------------------------------
+    behaviour_rows = []
+    for beh in CS_BEHAVIOURS:
+        skills = BEHAVIOUR_SKILL_MAP.get(beh, [])
+        if not skills:
+            continue
+        cur_vals = [st.session_state["skill_current"][s] for s in skills]
+        tgt_vals = [st.session_state["skill_target"][s] for s in skills]
+        cur_avg = np.mean(cur_vals)
+        tgt_avg = np.mean(tgt_vals)
+        gap = tgt_avg - cur_avg
+        behaviour_rows.append(
+            {
+                "Behaviour": beh,
+                "Current": round(cur_avg, 2),
+                "Target": round(tgt_avg, 2),
+                "Gap": round(gap, 2),
+                "Skills feeding this": ", ".join(skills),
+            }
+        )
+
+    beh_df = pd.DataFrame(behaviour_rows).sort_values("Gap", ascending=False)
+
+    st.markdown("---")
+    st.markdown("### 2️⃣ Behaviours view (derived from your skills)")
+
+    st.dataframe(
+        beh_df[["Behaviour", "Current", "Target", "Gap"]],
+        use_container_width=True,
+    )
+
+    # ------------------------------
+    # Heatmap for behaviours
+    # ------------------------------
+    st.markdown("### 🔥 Heatmap – Civil Service Behaviours (Current / Target / Gap)")
+
+    heat = beh_df.set_index("Behaviour")[["Current", "Target", "Gap"]]
+
+    fig_heat = px.imshow(
+        heat,
+        x=heat.columns,
+        y=heat.index,
+        labels=dict(x="Measure", y="Behaviour", color="Score"),
+        title="Behaviour maturity heatmap (derived from underlying skills)",
+        color_continuous_scale="RdBu_r",
+        zmin=-4,
+        zmax=5,
+    )
+    fig_heat.update_layout(
+        xaxis_side="top",
+        margin=dict(l=80, r=20, t=60, b=40),
+    )
+    st.plotly_chart(fig_heat, use_container_width=True)
+
+    # ------------------------------
+    # Top priorities
+    # ------------------------------
+    st.markdown("### ⭐ Top 3 Behaviour Growth Priorities")
+
+    top3 = beh_df.head(3)
+    for _, row in top3.iterrows():
+        beh = row["Behaviour"]
+        gap = row["Gap"]
+        skills_text = row["Skills feeding this"]
+        st.markdown(
+            f"""
+- **{beh}** (gap **+{gap}**)  
+  <div class='info-panel'>
+  Focus skills: {skills_text}.  
+  Suggested next step: pick 1–2 live pieces of work where you can deliberately
+  stretch this behaviour (e.g. leading a cross-team workshop, drafting a strategy paper,
+  or shaping a difficult decision).
+  </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # ------------------------------
+    # Mapping overview (for transparency)
+    # ------------------------------
+    st.markdown("---")
+    st.markdown("### 🧩 How skills map onto Civil Service Behaviours")
+
+    map_rows = []
+    for beh in CS_BEHAVIOURS:
+        skills = BEHAVIOUR_SKILL_MAP.get(beh, [])
+        map_rows.append(
+            {
+                "Behaviour": beh,
+                "Underlying skills": ", ".join(skills),
+            }
+        )
+    map_df = pd.DataFrame(map_rows)
+    st.table(map_df)
+
+    # ------------------------------
+    # Download
+    # ------------------------------
+    csv_bytes = beh_df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        "⬇️ Download behaviour assessment (CSV)",
+        data=csv_bytes,
+        file_name="behaviours_from_data_strategy_skills.csv",
+        mime="text/csv",
+    )
+
+    st.markdown(
+        """
+> This started as a side-project by a practising public-sector data strategist,  
+> to make strategy and career development more concrete — and a bit more honest —  
+> for people leading data, AI and analytics in government.
 """
     )
 
