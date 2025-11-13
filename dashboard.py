@@ -1298,20 +1298,20 @@ then uses the <strong>Ten Lenses</strong> to make trade-offs explicit.
     st.markdown("### The Ten Lenses of Data Strategy (tensions)")
     st.markdown(
         """
-| # | Lens | Left ↔ Right |
-|---|------|--------------|
-| 1 | **Abstraction Level** | Conceptual ↔ Logical/Physical |
-| 2 | **Adaptability** | Living ↔ Fixed |
-| 3 | **Ambition** | Essential ↔ Transformational |
-| 4 | **Coverage** | Horizontal ↔ Use-case-based |
-| 5 | **Governance Structure** | Ecosystem/Federated ↔ Centralised |
-| 6 | **Orientation** | Technology-focused ↔ Value-focused |
-| 7 | **Motivation** | Compliance-driven ↔ Innovation-driven |
-| 8 | **Access Philosophy** | Data-democratised ↔ Controlled access |
-| 9 | **Delivery Mode** | Incremental ↔ Big Bang |
-| 10 | **Decision Model** | Data-informed ↔ Data-driven |
-"""
-    )
+| # | Lens | Lef ↔ Right | Description | Example |
+|---|------|-------------|----------------------|
+| **1** | **Abstraction Level** | Conceptual ↔ Logical/Physical | **Conceptual** strategies define vision and principles; **Logical / Physical** specify architecture and governance. | A national “Data Vision 2030” is conceptual; a departmental “Data Architecture Strategy” is logical/physical. |
+| **2** | **Adaptability** | Living ↔ Fixed | **Living** evolves with new tech and policy; **Fixed** provides a stable framework. | The UK's AI white paper is living; GDPR is fixed. |
+| **3** | **Ambition** | Essential ↔ Transformational | **Essential** ensures foundations; **Transformational** drives innovation and automation. | DVLA data sharing are essential; Estonia’s X-Road is transformational. |
+| **4** | **Coverage** | Horizontal ↔ Use-case-based | **Horizontal** builds maturity across all functions; **Use-case-based** targets exemplar projects. | Government data maturity based maturity improvements vs a use case specific pilot. |
+| **5** | **Governance Structure** | Ecosystem/Federated ↔ Centralised | **Ecosystem / Federated** encourages collaboration; **Centralised** ensures uniform control. | Federated, domain and strength based vs a centralised decision making approach. |
+| **6** | **Orientation** | Technology-focused ↔ Value-focused |**Technology-focused** emphasises platforms; **Value-focused** prioritises outcomes and citizens. | A cloud migration roadmap vs a policy-impact dashboard. |
+| **7** | **Motivation** | Compliance driven ↔ Innovation-driven |**Compliance-driven** manages risk; **Innovation-driven** creates opportunity. | Privacy by design vs data sharing trusts sandboxes. |
+| **8** | **Access Philosophy** | Data-democratised ↔ Controlled access |**Democratised** broadens data access; **Controlled** enforces permissions. | Open environmental data portals vs restricted health datasets. |
+| **9** | **Delivery Mode** | Incremental ↔ Big Bang |**Incremental** iterates and tests; **Big Bang** transforms at once. | Local pilots vs national-scale reform. |
+| **10** | **Decision Model** |Data-informed ↔ Data-driven  |**Data-informed** blends human judgment; **Data-driven** relies on analytics/automation. | Evidence-based policymaking vs automated fraud detection. |
+""")
+
 
     st.markdown(
         """
