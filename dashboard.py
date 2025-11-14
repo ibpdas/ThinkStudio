@@ -1241,7 +1241,9 @@ with tab_journey:
 # ====================================================
 # ✅ ACTIONS & EXPORT
 # ====================================================
-
+# ====================================================
+# ACTIONS, PROJECTS, IMPACT DASHBOARD AND EXPORT
+# ====================================================
 with tab_actions:
     st.subheader("Actions, projects and export")
     st.caption(
@@ -1371,92 +1373,48 @@ with tab_actions:
         st.session_state["_actions_df"] = edited
 
         # ==========================================================
-        # IMPACT DASHBOARD
+        # IMPACT DASHBOARD (simple, no Altair)
         # ==========================================================
         st.markdown("### Impact dashboard")
 
         impact_df = edited.copy()
 
-        # Make sure numeric fields are treated as numbers
-        num_cols = [
+        # Ensure numeric fields are treated as numbers
+        numeric_cols = [
             "Est annual financial impact (£)",
             "Users affected (volume)",
             "Confidence (1 to 5)",
         ]
-        for col in num_cols:
+        for col in numeric_cols:
             if col in impact_df.columns:
-                impact_df[col] = pd.to_numeric(impact_df[col], errors="coerce")
+                impact_df[col] = pd.to_numeric(impact_df[col], errors="ignore")
 
-        total_financial = (
-            impact_df["Est annual financial impact (£)"].sum(skipna=True)
-            if "Est annual financial impact (£)" in impact_df.columns
-            else 0
-        )
-        total_users = (
-            impact_df["Users affected (volume)"].sum(skipna=True)
-            if "Users affected (volume)" in impact_df.columns
-            else 0
-        )
-        avg_conf = (
-            impact_df["Confidence (1 to 5)"].mean(skipna=True)
-            if "Confidence (1 to 5)" in impact_df.columns
-            else None
-        )
+        # KPI cards
+        total_financial = impact_df.get("Est annual financial impact (£)", pd.Series()).sum(skipna=True)
+        total_users = impact_df.get("Users affected (volume)", pd.Series()).sum(skipna=True)
+        avg_conf = impact_df.get("Confidence (1 to 5)", pd.Series()).mean(skipna=True)
 
-        col_kpi_1, col_kpi_2, col_kpi_3 = st.columns(3)
+        k1, k2, k3 = st.columns(3)
+        k1.metric("Total estimated annual impact (£)", f"{total_financial:,.0f}")
+        k2.metric("Users affected (total)", f"{int(total_users):,}")
+        k3.metric("Average confidence", f"{avg_conf:.1f}" if pd.notna(avg_conf) else "n a")
 
-        col_kpi_1.metric(
-            "Total estimated annual impact (£)",
-            f"{total_financial:,.0f}",
-        )
-        col_kpi_2.metric(
-            "Users affected (total)",
-            f"{int(total_users):,}",
-        )
-        col_kpi_3.metric(
-            "Average confidence",
-            f"{avg_conf:.1f}" if avg_conf is not None and pd.notna(avg_conf) else "n a",
-        )
-
-        # Impact by type chart
+        # Impact by type (simple Streamlit bar chart)
         if "Impact type" in impact_df.columns:
             impact_by_type = (
                 impact_df
                 .groupby("Impact type", dropna=True)
                 .agg({
                     "Est annual financial impact (£)": "sum",
-                    "Users affected (volume)": "sum",
                 })
                 .reset_index()
             )
 
             if not impact_by_type.empty:
-                chart = (
-                    alt.Chart(impact_by_type)
-                    .mark_bar()
-                    .encode(
-                        x=alt.X(
-                            "Est annual financial impact (£):Q",
-                            title="Est annual financial impact (£)"
-                        ),
-                        y=alt.Y(
-                            "Impact type:N",
-                            sort="-x",
-                            title="Impact type"
-                        ),
-                        tooltip=[
-                            "Impact type",
-                            "Est annual financial impact (£)",
-                            "Users affected (volume)",
-                        ],
-                    )
-                    .properties(height=300)
+                st.bar_chart(
+                    impact_by_type.set_index("Impact type")[["Est annual financial impact (£)"]]
                 )
-
-                st.altair_chart(chart, use_container_width=True)
-                st.caption(
-                    "Bars show where estimated financial impact is concentrated across impact types."
-                )
+                st.caption("Bars show where financial impact is concentrated.")
             else:
                 st.caption("Impact chart will appear once impact types and values are filled in.")
         else:
@@ -1469,15 +1427,15 @@ with tab_actions:
 
         view_df = edited.copy()
 
-        col_filter_1, col_filter_2, col_filter_3 = st.columns(3)
+        f1, f2, f3 = st.columns(3)
 
         # Filter by project type
         project_types_present = sorted(
             [p for p in project_type_options if p in view_df["Project type"].unique()]
         )
-        project_type_filter = col_filter_1.selectbox(
+        project_type_filter = f1.selectbox(
             "Filter by project type",
-            options=["All"] + project_types_present,
+            ["All"] + project_types_present,
             index=0,
         )
 
@@ -1485,16 +1443,16 @@ with tab_actions:
         impact_types_present = sorted(
             [i for i in impact_type_options if i in view_df["Impact type"].unique()]
         )
-        impact_type_filter = col_filter_2.selectbox(
+        impact_type_filter = f2.selectbox(
             "Filter by impact type",
-            options=["All"] + impact_types_present,
+            ["All"] + impact_types_present,
             index=0,
         )
 
         # Sort choice
-        sort_by = col_filter_3.selectbox(
+        sort_by = f3.selectbox(
             "Sort by",
-            options=[
+            [
                 "Est annual financial impact (£)",
                 "Users affected (volume)",
                 "Confidence (1 to 5)",
@@ -1509,18 +1467,13 @@ with tab_actions:
         if impact_type_filter != "All":
             view_df = view_df[view_df["Impact type"] == impact_type_filter]
 
-        # Ensure sort column is numeric
-        if sort_by in view_df.columns:
-            view_df[sort_by] = pd.to_numeric(view_df[sort_by], errors="coerce")
-            view_df = view_df.sort_values(sort_by, ascending=False)
+        # Apply sort
+        view_df[sort_by] = pd.to_numeric(view_df[sort_by], errors="ignore")
+        view_df = view_df.sort_values(sort_by, ascending=False)
 
-        st.dataframe(
-            view_df,
-            use_container_width=True,
-        )
-
+        st.dataframe(view_df, use_container_width=True)
         st.caption(
-            "Use this view live in the room to focus on the biggest projects by impact or users affected."
+            "Use this view live to focus on the projects with the biggest potential impact."
         )
 
         # ==========================================================
@@ -1537,6 +1490,8 @@ with tab_actions:
         st.markdown(
             "> Tip: this table can feed directly into programme plans, OKRs or a delivery roadmap."
         )
+
+
 # ====================================================
 # 📚 RESOURCES
 # ====================================================
