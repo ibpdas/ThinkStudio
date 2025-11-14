@@ -566,7 +566,7 @@ def render_explore_charts(fdf: pd.DataFrame):
 # ---------------- TABS SETUP ----------------
 ensure_sessions()
 tab_home, tab_explore, tab_lenses, tab_journey, tab_actions, tab_resources, tab_about = st.tabs(
-    ["Home", "Explore", "Lenses", "Journey", "Actions & Export", "Resources", "About"]
+    ["Home", "Explore", "Lenses", "Journey", "Actions", "Skills", "About"]
 )
 
 # ====================================================
@@ -1200,10 +1200,10 @@ with tab_journey:
     )
 
 # ====================================================
-# ✅ ACTIONS & EXPORT
+# ✅ ACTIONS 
 # ====================================================
 with tab_actions:
-    st.subheader("Actions & Export")
+    st.subheader("Actions")
     st.caption(
         "Turn your top priority shifts into an action log. "
         "Assign owners, timelines and metrics, then export to CSV."
@@ -1240,10 +1240,10 @@ with tab_actions:
         )
 
 # ====================================================
-# 📘 RESOURCES — Skills mapped to Civil Service Behaviours
+# 📘 Skills - mapped to Civil Service Behaviours
 # ====================================================
-with tab_resources:
-    st.subheader("Resources")
+with tab_skills:
+    st.subheader("Skills")
 
     st.markdown("## Data Strategy Skills Mapped to Civil Service Behaviours")
     st.caption(
