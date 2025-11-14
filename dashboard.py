@@ -1482,9 +1482,6 @@ public sector data leaders.
                             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.35);
                             border: 1px solid rgba(148, 163, 184, 0.4);
                         ">
-                            <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #38bdf8; margin-bottom: 6px;">
-                                Framework or case study
-                            </div>
                             <div style="font-weight: 600; font-size: 0.95rem; color: #e5e7eb; margin-bottom: 6px;">
                                 {title}
                             </div>
