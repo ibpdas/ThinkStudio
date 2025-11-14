@@ -593,7 +593,7 @@ def render_explore_charts(fdf: pd.DataFrame):
 
 # ---------------- TABS SETUP ----------------
 ensure_sessions()
-tab_home, tab_explore, tab_lenses, tab_journey, tab_actions, tab_resources, tab_about = st.tabs(
+tab_home, tab_explore, tab_lenses, tab_journey, tab_actions, tab_skills, tab_about = st.tabs(
     ["Home", "Explore", "Lenses", "Journey", "Actions & Export", "Resources", "About"]
 )
 
@@ -1279,159 +1279,159 @@ with tab_actions:
         )
 
 # ====================================================
-# 📚 RESOURCES
+# 🧑‍💻 SKILLS
 # ====================================================
-# ====================================================
-# 🎓 SKILLS & RESOURCES
-# ====================================================
-with tab_resources:
-    st.subheader("Skills - self assessment and strategy resources")
+with tab_skills:
+    st.subheader("Skills for data strategists")
 
     st.markdown(
         """
-Use this tab to reflect on your **personal skills as a data strategist** and to access
-a set of **strategy and data frameworks** that complement the rest of this tool.
+Use this page as a **self reflection tool**.  
+It helps you map your capability against **Civil Service Behaviours** and some
+cross cutting **data skills**. It is not an official assessment.
 """
     )
 
-    # ---------- 1) Skills self assessment ----------
-    st.markdown("### 1) Skills self assessment for data strategists")
+    # ------------------------------------------------
+    # 1) Behaviour based skills rating
+    # ------------------------------------------------
+    st.markdown("### 1) Behaviours and skills (self rating)")
 
     st.caption(
-        "Adapted from skills maturity ideas such as the Undercurrent Skills Matrix and "
-        "aligned to Civil Service behaviours for G7 and G6, plus an explicit Data Skills strand."
+        "For each behaviour and skill, pick the level that best describes you today. "
+        "You can use this privately, or as a prompt for line management and development conversations."
     )
 
-    st.markdown(
-        """
-**How to use**
+    heatmap_rows = []
 
-- For each skill, choose the level that best describes you today.  
-- Levels are intended as a prompt for reflection, not a formal assessment:  
-  - **1 - Early awareness**  
-  - **2 - Applying in my work**  
-  - **3 - Integrating across teams**  
-  - **4 - Leading / coaching**
-"""
-    )
-
-    # Initialise store in session if needed
-    if "_skills_levels" not in st.session_state:
-        st.session_state["_skills_levels"] = {}
-
-    skills_records = []
-
-    # Group by behaviour for display
     for behaviour in CS_BEHAVIOURS:
+        skills = SKILL_MATRIX.get(behaviour, [])
+        if not skills:
+            continue
+
         st.markdown(f"#### {behaviour}")
-        behaviour_skills = [s for b, s in SKILL_MATRIX if b == behaviour]
-
-        for skill in behaviour_skills:
-            key = f"skill_{behaviour}_{skill}".replace(" ", "_").lower()
-            default_level = st.session_state["_skills_levels"].get(key, SKILL_LEVELS[1])
-
-            selected = st.selectbox(
-                label=skill,
-                options=SKILL_LEVELS,
-                index=SKILL_LEVELS.index(default_level),
-                key=key,
+        for idx, skill in enumerate(skills):
+            # Build a stable key
+            key_slug = (
+                "skill_"
+                + behaviour.replace(" ", "_").replace("&", "and").lower()
+                + f"_{idx}"
             )
-
-            st.session_state["_skills_levels"][key] = selected
-            level_num = SKILL_LEVELS.index(selected) + 1
-
-            skills_records.append(
+            level = st.selectbox(
+                skill,
+                SKILL_LEVELS,
+                index=1,  # default "Basic working level"
+                key=key_slug,
+            )
+            heatmap_rows.append(
                 {
                     "Behaviour": behaviour,
                     "Skill": skill,
-                    "Level_name": selected,
-                    "Level_num": level_num,
+                    "Level name": level,
+                    "Level score": SKILL_LEVELS.index(level) + 1,
                 }
             )
 
         st.markdown("---")
 
-    skills_df = pd.DataFrame(skills_records)
+    # Build pivot for heatmap
+    if heatmap_rows:
+        skills_df = pd.DataFrame(heatmap_rows)
 
-    if not skills_df.empty:
-        # ---------- Heatmap (skills as rows, behaviours as columns) ----------
-        st.markdown("### 2) Skills heatmap")
-
-        st.caption(
-            "This heatmap shows your selected level for each skill. Darker cells indicate higher confidence."
-        )
-
-        heat = skills_df.pivot_table(
-            index="Skill",
-            columns="Behaviour",
-            values="Level_num",
+        pivot = skills_df.pivot_table(
+            index="Behaviour",
+            columns="Skill",
+            values="Level score",
             aggfunc="mean",
-        )
+        ).fillna(0)
+
+        st.markdown("#### Heatmap view")
 
         fig_heat = px.imshow(
-            heat,
-            text_auto=True,
-            aspect="auto",
+            pivot,
             color_continuous_scale="Blues",
-            origin="upper",
-            labels=dict(color="Level"),
-            title="Skills heatmap (1 = early awareness, 4 = leading / coaching)",
+            aspect="auto",
+            labels=dict(color="Level (1–4)"),
+        )
+        fig_heat.update_layout(
+            xaxis_title="Skill",
+            yaxis_title="Civil Service Behaviour",
+            margin=dict(l=60, r=20, t=40, b=60),
         )
         st.plotly_chart(fig_heat, use_container_width=True)
 
-        st.markdown(
-            "_Use this to spot where you are strongest and where you may want to focus development. "
-            "For example, you might be strong on Data Skills but earlier in the journey on storytelling or collaboration._"
-        )
+        avg_level = skills_df["Level score"].mean()
+        st.metric("Average behaviour based skill level", f"{avg_level:.1f} / 4")
 
-        # Optional download of the table
-        csv_skills = skills_df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "⬇️ Download skills snapshot (CSV)",
-            data=csv_skills,
-            file_name="data_strategist_skills_snapshot.csv",
-            mime="text/csv",
-            help="Download your self assessment for your own reflection or development planning.",
-        )
     else:
-        st.info("Set at least one skill level above to see the heatmap.")
+        st.info("No skills captured yet. Use the selectors above to rate your skills.")
+
+    # ------------------------------------------------
+    # 2) Cross cutting data skills
+    # ------------------------------------------------
+    st.markdown("### 2) Data skills (cross cutting)")
+
+    st.caption(
+        "These sit alongside behaviours and reflect the technical and analytical literacy "
+        "that underpins effective data strategy leadership."
+    )
+
+    data_skill_scores = []
+    for i, area in enumerate(DATA_SKILL_AREAS):
+        key_slug = "data_skill_" + str(i)
+        level = st.selectbox(
+            area,
+            SKILL_LEVELS,
+            index=1,
+            key=key_slug,
+        )
+        data_skill_scores.append(SKILL_LEVELS.index(level) + 1)
+
+    if data_skill_scores:
+        avg_data_skill = sum(data_skill_scores) / len(data_skill_scores)
+        st.metric("Average data skill level", f"{avg_data_skill:.1f} / 4")
+
+    st.markdown(
+        "_You might use this section to shape your learning plan or identify areas "
+        "for mentoring, communities of practice or formal training._"
+    )
 
     st.markdown("---")
 
-    # ---------- 3) Strategy and data frameworks ----------
+    # ------------------------------------------------
+    # 3) Strategy and data frameworks
+    # ------------------------------------------------
     st.markdown("### 3) Strategy and data frameworks")
 
     st.markdown(
         """
-Use these frameworks to deepen and structure your data strategy conversations:
+Use these frameworks to deepen the conversation around your data strategy:
 
 - **Playing to Win (Lafley and Martin)**  
-  Where will you play, and how will you win? Use this to sharpen the **strategic choices** that your data work supports.
+  Use this to sharpen the **strategic choices** that your data work supports  
+  (where will you play, how will you win).
 
 - **Strategy Kernel (Diagnosis → Guiding Policy → Coherent Actions)**  
-  Map your **maturity diagnosis** and **lens choices** into a guiding policy and 5 to 10 coherent actions.
+  Turn your maturity profile and lens choices into a clear diagnosis, a guiding policy,  
+  and a small set of coherent actions.
 
 - **Three Horizons Framework**  
-  Align actions over time:  
-  - Horizon 1 - Fix foundations and quick wins  
-  - Horizon 2 - Build new capabilities  
-  - Horizon 3 - Transform services and models
+  Plan work over time:  
+  - Horizon 1: Fix foundations and quick wins  
+  - Horizon 2: Build new data and analytics capabilities  
+  - Horizon 3: Transform services and operating models
 
-- **Data Management Body of Knowledge (DAMA DMBOK)**  
-  Cross check that your strategy covers key disciplines: data quality, governance, architecture, security, metadata and more.
+- **DAMA DMBOK (Data Management Body of Knowledge)**  
+  Sense check that your strategy covers key disciplines such as data quality, governance,  
+  architecture, security and metadata.
 
 - **Government Data Maturity Assessment (CDDO)**  
-  The six themes you used in the Lenses tab (Uses, Data, Leadership, Culture, Tools, Skills).  
-  Use the official framework for a deeper organisation wide conversation.
+  The six themes you used in the **Lenses** tab. Use the official framework for deeper,  
+  organisation wide conversations.
 
-- **Outcome and value frameworks (for example logic models, theory of change)**  
+- **Outcome and value frameworks (logic models, theory of change)**  
   Link data initiatives to **policy and service outcomes**, not just technology deliverables.
 """
-    )
-
-    st.markdown(
-        "_Over time you could add links here to specific public sector case studies, open guidance and "
-        "international data value frameworks (for example OECD, IMF, World Bank, UN)._"
     )
 
 # ====================================================
