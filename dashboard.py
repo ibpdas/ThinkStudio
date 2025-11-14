@@ -1292,7 +1292,6 @@ Three level model to track and communicate impact and prioritise actions.
 |-----------|--------------|-------|--------|-----------|
 | **Started** | **Not started** | **Completed** | **Started** | **Started** |
 
-<sub>Timeline Trend 2021 → 2025</sub>
 ---
 
 ### **Quick Wins and Mmilestones (Qualitative)**
