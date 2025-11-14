@@ -1431,6 +1431,7 @@ public sector data leaders.
     # ====================================================
     st.subheader("📚 Frameworks & Case Studies")
     st.markdown("Selected readings that inform strategic thinking and skills development.")
+
     resources = [
         ("OECD – Data Governance (Policy Sub-Issue)",
          "Policy and governance principles for managing data across its lifecycle.",
@@ -1439,8 +1440,8 @@ public sector data leaders.
          "Government approach to improving reliability and usability of data.",
          "https://www.gov.uk/government/publications/the-government-data-quality-framework/the-government-data-quality-framework-case-studies"),
         ("NAO – Improving Government Data: A Guide for Senior Leaders",
-         "Practical guidance on leadership, culture and maturity.",
-         "https://www.nao.org.uk/wp-content/uploads/2022/07/Improving-government-data-a-guide-for-senior-leaders.pdf"),
+            "Practical guidance on leadership, culture and maturity.",
+            "https://www.nao.org.uk/wp-content/uploads/2022/07/Improving-government-data-a-guide-for-senior-leaders.pdf"),
         ("OECD – A Data-Driven Public Sector (2019)",
          "International maturity model for strategic data use in government.",
          "https://www.oecd.org/content/dam/oecd/en/publications/reports/2019/05/a-data-driven-public-sector_1c183670/09ab162c-en.pdf"),
@@ -1460,8 +1461,54 @@ public sector data leaders.
          "Estimating the economic value of data assets and use in the UK.",
          "https://assets.publishing.service.gov.uk/media/6399f93d8fa8f50de138f220/Frontier_Economics_-_value_of_data_assets_-_Dec_2021.pdf"),
         ("OECD – Measuring Data as an Asset (2021)",
-         "Methods linking data maturity to national accounts/productivity.",
-         "https://www.oecd-ilibrary.org/economics/measuring-data-as-an-asset_b840fb01-en")]
+         "Methods linking data maturity to national accounts and productivity.",
+         "https://www.oecd-ilibrary.org/economics/measuring-data-as-an-asset_b840fb01-en"),
+    ]
+
+    # Helper to render resources as cards
+    def render_resource_cards(resources, cols_per_row=3):
+        for i in range(0, len(resources), cols_per_row):
+            row_items = resources[i : i + cols_per_row]
+            cols = st.columns(len(row_items))
+            for col, (title, desc, url) in zip(cols, row_items):
+                with col:
+                    st.markdown(
+                        f"""
+                        <div style="
+                            background-color: #0f172a;
+                            border-radius: 12px;
+                            padding: 16px 16px 14px 16px;
+                            margin-bottom: 12px;
+                            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.35);
+                            border: 1px solid rgba(148, 163, 184, 0.4);
+                        ">
+                            <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #38bdf8; margin-bottom: 6px;">
+                                Framework or case study
+                            </div>
+                            <div style="font-weight: 600; font-size: 0.95rem; color: #e5e7eb; margin-bottom: 6px;">
+                                {title}
+                            </div>
+                            <div style="font-size: 0.85rem; color: #cbd5f5; margin-bottom: 10px;">
+                                {desc}
+                            </div>
+                            <a href="{url}" target="_blank" style="
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 6px;
+                                font-size: 0.85rem;
+                                font-weight: 500;
+                                color: #38bdf8;
+                                text-decoration: none;
+                            ">
+                                <span>Open resource</span>
+                                <span style="font-size: 0.9rem;">↗</span>
+                            </a>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+    render_resource_cards(resources)
 
 # ====================================================
 # ℹ️ ABOUT
