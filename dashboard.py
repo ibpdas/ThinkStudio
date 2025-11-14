@@ -101,7 +101,7 @@ a:hover {{ color:#003078; }}
 </style>
 <div class="header-bar">
   <h1>Public Sector Data Strategy Explorer</h1>
-  <div class="sub">Design better data strategies, faster — balance tensions, align leadership, and plan change.</div>
+  <div class="sub">Real data strategies + faster impact</div>
 </div>
 """,
     unsafe_allow_html=True,
