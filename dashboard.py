@@ -1475,7 +1475,7 @@ public sector data leaders.
                     st.markdown(
                         f"""
                         <div style="
-                            background-color: #0f172a;
+                            background-color: #1e293b;
                             border-radius: 12px;
                             padding: 16px 16px 14px 16px;
                             margin-bottom: 12px;
