@@ -1284,7 +1284,7 @@ with tab_actions:
 # ====================================================
 # 🎓 SKILLS & RESOURCES
 # ====================================================
-with tab_skills:
+with tab_resources:
     st.subheader("Skills - self assessment and strategy resources")
 
     st.markdown(
