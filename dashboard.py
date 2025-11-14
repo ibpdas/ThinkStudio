@@ -1341,8 +1341,7 @@ with tab_about:
 This prototype combines three main ingredients:
 
 1. **Government data maturity themes**  
-   Based on the six themes in the
-   [Data Maturity Assessment for Government framework](https://www.gov.uk/government/publications/data-maturity-assessment-for-government-framework/data-maturity-assessment-for-government-framework-html):  
+   Based on the six themes in the Data Maturity Assessment for Government framework:  
    **Uses, Data, Leadership, Culture, Tools, Skills** — each rated from **1 (Beginning)** to **5 (Mastering)**.  
    The average score gives a simple sense of overall readiness.
 
@@ -1373,8 +1372,8 @@ This prototype combines three main ingredients:
         """
 3. **Resources and skills**  
    The **Resources** tab links these ideas to wider strategy and skills material
-   (for example, strategy “kernels”, horizons, and data-skills maturity lenses),
-   so that insights from this tool can feed into **personal development** as well as **business level planning**.
+   (for example, strategy “kernels”, horizons, DAMA, Theory of Change, Logic Model),
+   so that insights from this tool can feed into **personal development** as well as **business level planning and influencing**.
 """
     )
 
