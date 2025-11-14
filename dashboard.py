@@ -1426,7 +1426,7 @@ public sector data leaders.
 
     st.markdown("---")
 
-    # ====================================================
+       # ====================================================
     # 📚 Strategy & data frameworks 
     # ====================================================
     st.subheader("📚 Frameworks & Case Studies")
@@ -1465,7 +1465,7 @@ public sector data leaders.
          "https://www.oecd-ilibrary.org/economics/measuring-data-as-an-asset_b840fb01-en"),
     ]
 
-        # Helper to render resources as cards (label removed)
+    # Helper to render resources as cards
     def render_resource_cards(resources, cols_per_row=3):
         for i in range(0, len(resources), cols_per_row):
             row_items = resources[i : i + cols_per_row]
@@ -1482,23 +1482,15 @@ public sector data leaders.
                             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.35);
                             border: 1px solid rgba(148, 163, 184, 0.4);
                         ">
-                            <div style="
-                                font-weight: 600;
-                                font-size: 0.95rem;
-                                color: #e5e7eb;
-                                margin-bottom: 6px;
-                            ">
+                            <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #38bdf8; margin-bottom: 6px;">
+                                Framework or case study
+                            </div>
+                            <div style="font-weight: 600; font-size: 0.95rem; color: #e5e7eb; margin-bottom: 6px;">
                                 {title}
                             </div>
-
-                            <div style="
-                                font-size: 0.85rem;
-                                color: #cbd5f5;
-                                margin-bottom: 10px;
-                            ">
+                            <div style="font-size: 0.85rem; color: #cbd5f5; margin-bottom: 10px;">
                                 {desc}
                             </div>
-
                             <a href="{url}" target="_blank" style="
                                 display: inline-flex;
                                 align-items: center;
