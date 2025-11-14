@@ -1243,10 +1243,10 @@ with tab_journey:
 # ====================================================
 
 with tab_actions:
-    st.subheader("Actions & Export")
+    st.subheader("Actions and Export")
     st.caption(
-        "Turn your top priority shifts into an action log. "
-        "Assign owners, timelines and metrics, then export to CSV."
+        "Turn your priority shifts into an action log. "
+        "Estimate impact, assign owners and timelines, then export to CSV."
     )
 
     ensure_sessions()
@@ -1258,15 +1258,91 @@ with tab_actions:
             "Go to the Journey tab to calculate gaps and priorities."
         )
     else:
+
+        # ----------------------------------------------------------
+        # ADD IMPACT-THINKING COLUMNS IF MISSING
+        # ----------------------------------------------------------
+        impact_cols = [
+            "Impact type",
+            "Est annual financial impact (£)",
+            "Users affected (volume)",
+            "Confidence (1 to 5)",
+            "Impact notes",
+        ]
+
+        for col in impact_cols:
+            if col not in actions_df.columns:
+                actions_df[col] = ""
+
+        # Preset options for "Impact type" (Defra aligned)
+        impact_type_options = [
+            "Financial efficiency",
+            "User productivity",
+            "Data quality improvement",
+            "Risk reduction",
+            "Environmental or policy outcomes",
+            "Citizen experience",
+            "Delivery unblocker",
+        ]
+
+        # ----------------------------------------------------------
+        # WORKSHOP PROMPTS
+        # ----------------------------------------------------------
+        st.caption(
+            "Use rough estimates. The goal in workshops is focus, not precision."
+        )
+
+        with st.expander("How to think about impact"):
+            st.markdown(
+                """
+- **Impact type**: choose one that best describes the benefit.
+- **Est annual financial impact (£)**: a rough saving or benefit if this succeeds for one year.
+- **Users affected (volume)**: how many analysts, teams, farmers, inspectors or staff feel a difference.
+- **Confidence (1 to 5)**: 1 is very uncertain, 5 is very confident.
+- **Impact notes**: one sentence that explains your estimate.
+                """
+            )
+
+        # ----------------------------------------------------------
+        # EDITABLE ACTION LOG
+        # ----------------------------------------------------------
         st.markdown("### Action log (editable)")
+
         edited = st.data_editor(
             actions_df,
             num_rows="dynamic",
             use_container_width=True,
             key="actions_editor",
+            column_config={
+                "Impact type": st.column_config.SelectboxColumn(
+                    "Impact type",
+                    options=impact_type_options,
+                    help="Choose the type of impact this action will create",
+                ),
+                "Est annual financial impact (£)": st.column_config.NumberColumn(
+                    "Est annual financial impact (£)",
+                    help="Estimated one year financial benefit or saving"
+                ),
+                "Users affected (volume)": st.column_config.NumberColumn(
+                    "Users affected (volume)",
+                    help="Approx number of users or service cases touched"
+                ),
+                "Confidence (1 to 5)": st.column_config.NumberColumn(
+                    "Confidence (1 to 5)",
+                    min_value=1,
+                    max_value=5,
+                    step=1,
+                    help="Your level of certainty in the impact estimate"
+                ),
+            }
         )
+
+        # Save edited
         st.session_state["_actions_df"] = edited
 
+        # ----------------------------------------------------------
+        # EXPORT
+        # ----------------------------------------------------------
         csv_bytes = edited.to_csv(index=False).encode("utf-8")
         st.download_button(
             "⬇️ Download actions as CSV",
@@ -1278,8 +1354,6 @@ with tab_actions:
         st.markdown(
             "> Tip: paste this table into your programme plan or OKRs to track progress."
         )
-
-
 # ====================================================
 # 📚 RESOURCES
 # ====================================================
