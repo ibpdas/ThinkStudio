@@ -103,7 +103,7 @@ a:hover {{ color:#003078; }}
 </style>
 <div class="header-bar">
   <h1>Public Sector Data Strategy Explorer</h1>
-  <div class="sub">Real data strategy + Fast impact.</div>
+  <div class="sub"> Confident Collaboration + Actionable Strategy + Faster Impact </div>
 </div>
 """,
     unsafe_allow_html=True,
