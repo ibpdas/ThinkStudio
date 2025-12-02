@@ -21,7 +21,7 @@ Live demo: https://thinkstudio.streamlit.app/
 ## 1. Overview
 
 Think Studio is a micro lab for public sector teams working on data strategy.  
-It accelerates the most time-consuming part of strategic work: making priorities explicit, surfacing organisational tensions and converting them into actionable shifts.
+It accelerates the most time consuming part of strategic work: making priorities explicit, surfacing organisational tensions and converting them into actionable plans and capabilities.
 
 It is for leaders who need clarity fast, without lengthy frameworks or abstract best practice.
 
@@ -37,8 +37,6 @@ It is for leaders who need clarity fast, without lengthy frameworks or abstract 
 | Time spent recreating alignment material | 40% | Teams repeatedly rebuild scans, matrices and summaries | NAO case examples and departmental interviews |
 | Teams struggling to convert insight to priorities | 50% | Decision clarity is the limiting factor | Cross-government Strategy and Delivery Reviews |
 | Blockers caused by organisational tension | 70%+ | Culture, incentives and governance outweigh technology | NAO, DDaT Workforce Insights, OECD Digital Government Review |
-
-These figures summarise consistent findings across NAO audits, Cabinet Office workforce data, OECD digital government reviews and departmental transformation studies.
 
 ---
 
