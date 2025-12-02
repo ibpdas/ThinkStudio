@@ -28,7 +28,7 @@ APP_VERSION = "ALPHA v3.2 - 2025-11-16"
 
 # ---------------- PAGE CONFIG & THEME ----------------
 st.set_page_config(
-    page_title="Data Strategy Accelerator",
+    page_title="Think Studio - Data Strategy Accelerator",
     layout="wide",
 )
 
